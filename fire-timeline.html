@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>消防发展历程 - 从传统到感联智控</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Microsoft Yahei", sans-serif;
+        }
+
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #d92121;
+            margin-bottom: 60px;
+            font-size: 2.5rem;
+            position: relative;
+        }
+
+        h1::after {
+            content: "";
+            display: block;
+            width: 100px;
+            height: 4px;
+            background-color: #d92121;
+            margin: 15px auto 0;
+            border-radius: 2px;
+        }
+
+        /* 时间轴样式 */
+        .timeline {
+            position: relative;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .timeline::after {
+            content: '';
+            position: absolute;
+            width: 6px;
+            background-color: #d92121;
+            top: 0;
+            bottom: 0;
+            left: 50%;
+            margin-left: -3px;
+            border-radius: 3px;
+        }
+
+        .timeline-item {
+            padding: 10px 40px;
+            position: relative;
+            width: 50%;
+            animation: fadeIn 0.8s ease forwards;
+            opacity: 0;
+        }
+
+        /* 奇数项在左侧，偶数项在右侧 */
+        .timeline-item:nth-child(odd) {
+            left: 0;
+            animation-delay: calc(0.2s * var(--item-index));
+        }
+
+        .timeline-item:nth-child(even) {
+            left: 50%;
+            animation-delay: calc(0.2s * var(--item-index));
+        }
+
+        /* 时间点样式 */
+        .timeline-item::after {
+            content: '';
+            position: absolute;
+            width: 25px;
+            height: 25px;
+            background-color: white;
+            border: 4px solid #d92121;
+            border-radius: 50%;
+            top: 15px;
+            z-index: 1;
+        }
+
+        .timeline-item:nth-child(odd)::after {
+            right: -17px;
+        }
+
+        .timeline-item:nth-child(even)::after {
+            left: -17px;
+        }
+
+        /* 内容卡片样式 */
+        .timeline-content {
+            padding: 20px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .timeline-item:hover .timeline-content {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+        }
+
+        .timeline-period {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #d92121;
+            margin-bottom: 10px;
+        }
+
+        .timeline-title {
+            font-size: 1.4rem;
+            margin-bottom: 15px;
+            color: #222;
+        }
+
+        .timeline-desc {
+            color: #666;
+            margin-bottom: 15px;
+        }
+
+        .timeline-features {
+            list-style-type: none;
+        }
+
+        .timeline-features li {
+            padding-left: 20px;
+            margin-bottom: 8px;
+            position: relative;
+        }
+
+        .timeline-features li::before {
+            content: "•";
+            position: absolute;
+            left: 0;
+            color: #d92121;
+            font-weight: bold;
+        }
+
+        /* 感联智控核心技术展示 */
+        .tech-showcase {
+            margin-top: 80px;
+            padding: 40px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 6px 18px rgba(0,0,0,0.1);
+        }
+
+        .tech-title {
+            text-align: center;
+            font-size: 2rem;
+            color: #d92121;
+            margin-bottom: 40px;
+        }
+
+        .tech-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
+        }
+
+        .tech-card {
+            padding: 25px;
+            border-radius: 8px;
+            border: 1px solid #eee;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .tech-card:hover {
+            background-color: #f8f9fa;
+            transform: translateY(-8px);
+            border-color: #d92121;
+        }
+
+        .tech-icon {
+            font-size: 3rem;
+            color: #d92121;
+            margin-bottom: 20px;
+        }
+
+        .tech-card h3 {
+            margin-bottom: 15px;
+            color: #222;
+        }
+
+        .tech-card p {
+            color: #666;
+        }
+
+        /* 对比按钮和面板 */
+        .compare-btn {
+            display: block;
+            margin: 50px auto;
+            padding: 12px 30px;
+            background-color: #d92121;
+            color: white;
+            border: none;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .compare-btn:hover {
+            background-color: #b51a1a;
+            transform: scale(1.05);
+        }
+
+        .compare-panel {
+            max-width: 1000px;
+            margin: 0 auto 50px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 6px 18px rgba(0,0,0,0.1);
+            padding: 30px;
+            display: none;
+            animation: slideDown 0.5s ease forwards;
+        }
+
+        .compare-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .compare-table th,
+        .compare-table td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        .compare-table th {
+            background-color: #f8f9fa;
+            color: #d92121;
+            font-size: 1.1rem;
+        }
+
+        .compare-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* 动画定义 */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* 响应式适配 */
+        @media screen and (max-width: 768px) {
+            .timeline::after {
+                left: 31px;
+            }
+
+            .timeline-item {
+                width: 100%;
+                padding-left: 70px;
+                padding-right: 25px;
+                left: 0 !important;
+            }
+
+            .timeline-item::after {
+                left: 15px !important;
+                right: auto !important;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+
+            .tech-title {
+                font-size: 1.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>消防发展历程：从传统防控到“感联智控”</h1>
+
+        <!-- 时间轴展示 -->
+        <div class="timeline">
+            <!-- 阶段1：传统人工消防 -->
+            <div class="timeline-item" style="--item-index: 1;">
+                <div class="timeline-content">
+                    <div class="timeline-period">1980年前</div>
+                    <h2 class="timeline-title">传统人工消防阶段</h2>
+                    <p class="timeline-desc">以人力巡查、人工报警、经验判断为主的基础消防模式，依赖人力和简单工具，防控效率低、响应慢。</p>
+                    <ul class="timeline-features">
+                        <li>主要依靠人工巡检，覆盖范围有限</li>
+                        <li>报警方式为人工呼喊、电话报警，时延长</li>
+                        <li>灭火依赖现场人员经验，缺乏预判能力</li>
+                        <li>无数据记录和分析，无法追溯和优化</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- 阶段2：简易设备消防 -->
+            <div class="timeline-item" style="--item-index: 2;">
+                <div class="timeline-content">
+                    <div class="timeline-period">1980-2000年</div>
+                    <h2 class="timeline-title">简易设备消防阶段</h2>
+                    <p class="timeline-desc">开始引入基础消防设备，实现初步的自动化监测，但设备独立运行，无联网和智能分析能力。</p>
+                    <ul class="timeline-features">
+                        <li>安装独立烟感、温感探测器，单点报警</li>
+                        <li>配备消防栓、灭火器等基础灭火设备</li>
+                        <li>设备无联动，报警信息仅本地显示</li>
+                        <li>故障依赖人工排查，维护成本高</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- 阶段3：联网监测消防 -->
+            <div class="timeline-item" style="--item-index: 3;">
+                <div class="timeline-content">
+                    <div class="timeline-period">2000-2015年</div>
+                    <h2 class="timeline-title">联网监测消防阶段</h2>
+                    <p class="timeline-desc">消防设备开始联网，实现集中监控和远程报警，初步形成消防物联网雏形，但智能化程度低。</p>
+                    <ul class="timeline-features">
+                        <li>探测器接入消防主机，实现集中报警</li>
+                        <li>部分区域实现远程数据传输和监控</li>
+                        <li>具备基础的数据存储和简单报表功能</li>
+                        <li>仍以事后报警为主，缺乏预警能力</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- 阶段4：感联智控消防 -->
+            <div class="timeline-item" style="--item-index: 4;">
+                <div class="timeline-content">
+                    <div class="timeline-period">2015年至今</div>
+                    <h2 class="timeline-title">感联智控消防阶段</h2>
+                    <p class="timeline-desc">融合感知、联网、智能分析和精准控制的新一代消防体系，实现从被动应对到主动防控的转变。</p>
+                    <ul class="timeline-features">
+                        <li>多维度智能感知（烟、温、气、视频、振动）</li>
+                        <li>万物互联，设备、人员、场景全面联网</li>
+                        <li>AI智能分析，实现火灾风险预判和预警</li>
+                        <li>智能联动控制，自动启动应急处置措施</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- 感联智控核心技术展示 -->
+        <div class="tech-showcase">
+            <h2 class="tech-title">“感联智控”核心技术体系</h2>
+            <div class="tech-grid">
+                <div class="tech-card">
+                    <div class="tech-icon">📡</div>
+                    <h3>多维度感知</h3>
+                    <p>融合烟雾、温度、燃气、视频、声波等多种传感器，实现火灾早期精准识别</p>
+                </div>
+                <div class="tech-card">
+                    <div class="tech-icon">🌐</div>
+                    <h3>全域联网</h3>
+                    <p>5G/NB-IoT/LoRa等通信技术，实现消防设备、指挥中心、救援人员的实时互联</p>
+                </div>
+                <div class="tech-card">
+                    <div class="tech-icon">🧠</div>
+                    <h3>智能分析</h3>
+                    <p>AI算法+大数据分析，实现火灾风险评估、趋势预测、异常行为识别</p>
+                </div>
+                <div class="tech-card">
+                    <div class="tech-icon">🎛️</div>
+                    <h3>精准控制</h3>
+                    <p>自动启动喷淋、排烟、报警等系统，实现分级响应和精准处置</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 对比展示按钮 -->
+        <button class="compare-btn" id="compareBtn">查看传统消防 vs 感联智控 对比</button>
+
+        <!-- 对比面板 -->
+        <div class="compare-panel" id="comparePanel">
+            <table class="compare-table">
+                <thead>
+                    <tr>
+                        <th>对比维度</th>
+                        <th>传统消防</th>
+                        <th>感联智控消防</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>监测方式</td>
+                        <td>人工巡检 + 单点设备报警</td>
+                        <td>智能传感器全域覆盖 + 24小时自动监测</td>
+                    </tr>
+                    <tr>
+                        <td>响应速度</td>
+                        <td>分钟级/小时级，依赖人工发现</td>
+                        <td>秒级响应，自动报警并推送至指挥中心</td>
+                    </tr>
+                    <tr>
+                        <td>预警能力</td>
+                        <td>无预警，仅能事后发现</td>
+                        <td>基于数据分析实现火灾风险提前预警</td>
+                    </tr>
+                    <tr>
+                        <td>处置方式</td>
+                        <td>人工操作，依赖经验</td>
+                        <td>智能联动，自动启动应急处置措施</td>
+                    </tr>
+                    <tr>
+                        <td>数据管理</td>
+                        <td>无数据记录，无法追溯</td>
+                        <td>全流程数据记录，支持复盘和优化</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // 设置时间轴项的索引
+        document.querySelectorAll('.timeline-item').forEach((item, index) => {
+            item.style.setProperty('--item-index', index + 1);
+        });
+
+        // 对比面板切换
+        const compareBtn = document.getElementById('compareBtn');
+        const comparePanel = document.getElementById('comparePanel');
+
+        compareBtn.addEventListener('click', () => {
+            if (comparePanel.style.display === 'none' || comparePanel.style.display === '') {
+                comparePanel.style.display = 'block';
+                compareBtn.textContent = '收起对比面板';
+            } else {
+                comparePanel.style.display = 'none';
+                compareBtn.textContent = '查看传统消防 vs 感联智控 对比';
+            }
+        });
+
+        // 页面滚动动画增强
+        window.addEventListener('scroll', () => {
+            const elements = document.querySelectorAll('.tech-card');
+            elements.forEach(element => {
+                const position = element.getBoundingClientRect();
+                // 元素进入视口时添加动画
+                if (position.top < window.innerHeight && position.bottom >= 0) {
+                    element.style.opacity = '1';
+                    element.style.transform = 'translateY(0)';
+                }
+            });
+        });
+
+        // 初始化技术卡片样式
+        document.querySelectorAll('.tech-card').forEach(card => {
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(20px)';
+            card.style.transition = 'all 0.5s ease';
+        });
+
+        // 页面加载完成后触发一次滚动事件
+        window.addEventListener('load', () => {
+            window.dispatchEvent(new Event('scroll'));
+        });
+    </script>
+</body>
+</html>
