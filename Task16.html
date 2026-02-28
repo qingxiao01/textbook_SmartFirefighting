@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>基于数字孪生的智慧消防系统</title>
+    <!-- 引入Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入Font Awesome图标 -->
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <!-- 引入Chart.js图表库 -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+    
+    <!-- 自定义Tailwind配置 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#0066CC',      // 数字孪生主色调-科技蓝
+                        secondary: '#00C2B8',    // 辅助色-青绿色
+                        danger: '#FF4D4F',       // 危险色-红色
+                        warning: '#FFAA33',      // 警告色-橙色
+                        success: '#00B42A',      // 成功色-绿色
+                        dark: '#1D2129',         // 深色背景
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    
+    <!-- 自定义工具类 -->
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .card-hover {
+                transition: all 0.3s ease;
+            }
+            .card-hover:hover {
+                transform: translateY(-4px);
+                box-shadow: 0 12px 20px rgba(0, 102, 204, 0.15);
+            }
+            .panel-border {
+                border: 1px solid rgba(0, 102, 204, 0.1);
+            }
+            .digital-twin-shadow {
+                box-shadow: 0 0 20px rgba(0, 194, 184, 0.2);
+            }
+            .sensor-active {
+                animation: pulse 2s infinite;
+            }
+            @keyframes pulse {
+                0% { box-shadow: 0 0 0 0 rgba(255, 77, 79, 0.7); }
+                70% { box-shadow: 0 0 0 10px rgba(255, 77, 79, 0); }
+                100% { box-shadow: 0 0 0 0 rgba(255, 77, 79, 0); }
+            }
+            .scrollbar-hide::-webkit-scrollbar {
+                display: none;
+            }
+            .scrollbar-hide {
+                -ms-overflow-style: none;
+                scrollbar-width: none;
+            }
+            /* 模型图片交互效果 */
+            .model-img-container {
+                overflow: hidden;
+                position: relative;
+            }
+            .model-img {
+                transition: transform 0.5s ease;
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+            }
+            .model-img-container:hover .model-img {
+                transform: scale(1.05);
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans text-dark overflow-x-hidden">
+    <!-- 顶部导航栏 -->
+    <header class="bg-white shadow-md sticky top-0 z-50">
+        <div class="container mx-auto px-4 py-3 flex flex-col md:flex-row items-center justify-between">
+            <div class="flex items-center space-x-3 mb-3 md:mb-0">
+                <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                    <i class="fa fa-fire-extinguisher text-primary text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold text-dark">数字孪生 · 智慧消防系统</h1>
+                    <p class="text-xs text-gray-500">实时映射 · 模拟推演 · 智能决策</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center space-x-4">
+                <!-- 系统状态 -->
+                <div class="flex items-center bg-primary/5 rounded-full px-3 py-1.5">
+                    <div id="system-status-dot" class="w-2.5 h-2.5 rounded-full bg-success animate-pulse mr-2"></div>
+                    <span id="system-status-text" class="text-xs font-medium text-primary">系统状态：正常运行</span>
+                </div>
+                
+                <!-- 快捷操作 -->
+                <button id="toggleSimulationBtn" class="bg-primary hover:bg-primary/90 text-white rounded-full px-3 py-1.5 text-xs flex items-center transition-colors">
+                    <i class="fa fa-play mr-1.5"></i> 启动模拟演练
+                </button>
+                <button class="bg-white border border-primary text-primary hover:bg-primary/5 rounded-full px-3 py-1.5 text-xs flex items-center transition-colors">
+                    <i class="fa fa-download mr-1.5"></i> 导出数据
+                </button>
+            </div>
+        </div>
+        
+        <!-- 二级导航 -->
+        <nav class="border-t border-gray-100 px-4 py-2">
+            <div class="container mx-auto flex space-x-6 overflow-x-auto scrollbar-hide">
+                <a href="#dashboard" class="text-primary border-b-2 border-primary px-2 py-1 whitespace-nowrap flex items-center text-sm font-medium">
+                    <i class="fa fa-dashboard mr-1"></i> 总览面板
+                </a>
+                <a href="#twin-model" class="text-gray-600 hover:text-primary px-2 py-1 whitespace-nowrap flex items-center text-sm transition-colors">
+                    <i class="fa fa-cube mr-1"></i> 数字孪生模型
+                </a>
+                <a href="#real-time-data" class="text-gray-600 hover:text-primary px-2 py-1 whitespace-nowrap flex items-center text-sm transition-colors">
+                    <i class="fa fa-refresh mr-1"></i> 实时数据监控
+                </a>
+                <a href="#simulation" class="text-gray-600 hover:text-primary px-2 py-1 whitespace-nowrap flex items-center text-sm transition-colors">
+                    <i class="fa fa-fire mr-1"></i> 火情模拟推演
+                </a>
+                <a href="#emergency" class="text-gray-600 hover:text-primary px-2 py-1 whitespace-nowrap flex items-center text-sm transition-colors">
+                    <i class="fa fa-ambulance mr-1"></i> 应急指挥调度
+                </a>
+                <a href="#analysis" class="text-gray-600 hover:text-primary px-2 py-1 whitespace-nowrap flex items-center text-sm transition-colors">
+                    <i class="fa fa-bar-chart mr-1"></i> 数据分析报告
+                </a>
+            </div>
+        </nav>
+    </header>
+
+    <!-- 主要内容区域 -->
+    <main class="container mx-auto px-4 py-6">
+        <!-- 1. 总览面板 -->
+        <section id="dashboard" class="mb-8">
+            <h2 class="text-lg font-bold mb-5 flex items-center text-primary">
+                <i class="fa fa-dashboard mr-2"></i> 数字孪生消防系统总览
+            </h2>
+            
+            <!-- 核心数据卡片 -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                <!-- 监测点位 -->
+                <div class="bg-white rounded-lg shadow-md p-4 card-hover panel-border">
+                    <div class="flex justify-between items-start mb-3">
+                        <div>
+                            <p class="text-xs text-gray-500">监测点位总数</p>
+                            <h3 class="text-2xl font-bold mt-1 text-primary">1,286</h3>
+                        </div>
+                        <div class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                            <i class="fa fa-map-marker"></i>
+                        </div>
+                    </div>
+                    <div class="flex items-center text-xs text-gray-600">
+                        <span class="text-success flex items-center"><i class="fa fa-arrow-up mr-1"></i>12.5%</span>
+                        <span class="ml-2">较上月增加</span>
+                    </div>
+                </div>
+                
+                <!-- 在线设备 -->
+                <div class="bg-white rounded-lg shadow-md p-4 card-hover panel-border">
+                    <div class="flex justify-between items-start mb-3">
+                        <div>
+                            <p class="text-xs text-gray-500">在线设备数</p>
+                            <h3 class="text-2xl font-bold mt-1 text-success">1,278</h3>
+                        </div>
+                        <div class="w-8 h-8 rounded-full bg-success/10 flex items-center justify-center text-success">
+                            <i class="fa fa-check-circle"></i>
+                        </div>
+                    </div>
+                    <div class="flex items-center text-xs text-gray-600">
+                        <span class="font-medium">99.4%</span>
+                        <span class="ml-2">设备在线率</span>
+                    </div>
+                </div>
+                
+                <!-- 告警数量 -->
+                <div class="bg-white rounded-lg shadow-md p-4 card-hover panel-border">
+                    <div class="flex justify-between items-start mb-3">
+                        <div>
+                            <p class="text-xs text-gray-500">今日告警数</p>
+                            <h3 class="text-2xl font-bold mt-1 text-warning">18</h3>
+                        </div>
+                        <div class="w-8 h-8 rounded-full bg-warning/10 flex items-center justify-center text-warning">
+                            <i class="fa fa-exclamation-triangle"></i>
+                        </div>
+                    </div>
+                    <div class="flex items-center text-xs text-gray-600">
+                        <span class="text-danger flex items-center"><i class="fa fa-arrow-up mr-1"></i>3</span>
+                        <span class="ml-2">较昨日增加</span>
+                    </div>
+                </div>
+                
+                <!-- 处置效率 -->
+                <div class="bg-white rounded-lg shadow-md p-4 card-hover panel-border">
+                    <div class="flex justify-between items-start mb-3">
+                        <div>
+                            <p class="text-xs text-gray-500">平均处置时间</p>
+                            <h3 class="text-2xl font-bold mt-1 text-secondary">8<span class="text-sm">分钟</span></h3>
+                        </div>
+                        <div class="w-8 h-8 rounded-full bg-secondary/10 flex items-center justify-center text-secondary">
+                            <i class="fa fa-tachometer"></i>
+                        </div>
+                    </div>
+                    <div class="flex items-center text-xs text-gray-600">
+                        <span class="text-success flex items-center"><i class="fa fa-arrow-down mr-1"></i>2分钟</span>
+                        <span class="ml-2">较上月缩短</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 核心功能区 -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- 数字孪生模型预览 -->
+                <div class="lg:col-span-2 bg-white rounded-lg shadow-md p-5 panel-border">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-bold text-primary flex items-center">
+                            <i class="fa fa-cube mr-2"></i> 建筑数字孪生模型
+                        </h3>
+                        <div class="flex space-x-2">
+                            <button id="zoomInBtn" class="bg-gray-100 hover:bg-gray-200 rounded p-1.5 text-gray-700 transition-colors">
+                                <i class="fa fa-search-plus"></i>
+                            </button>
+                            <button id="zoomOutBtn" class="bg-gray-100 hover:bg-gray-200 rounded p-1.5 text-gray-700 transition-colors">
+                                <i class="fa fa-search-minus"></i>
+                            </button>
+                            <button id="resetViewBtn" class="bg-gray-100 hover:bg-gray-200 rounded p-1.5 text-gray-700 transition-colors">
+                                <i class="fa fa-refresh"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- 替换为模型图片容器 -->
+                    <div id="twin-container" class="w-full h-[300px] lg:h-[400px] bg-gray-900 rounded-lg digital-twin-shadow relative overflow-hidden model-img-container">
+                        <!-- 模型图片 -->
+                        <img src="https://picsum.photos/id/1031/1200/800" alt="建筑数字孪生模型" class="model-img">
+                        
+                        <!-- 交互提示 -->
+                        <div class="absolute bottom-3 left-3 bg-black/50 text-white text-xs px-2 py-1 rounded">
+                            <i class="fa fa-mouse-pointer mr-1"></i> 点击模型可查看设备详情
+                        </div>
+                        
+                        <!-- 告警标记（模拟） -->
+                        <div id="alarm-marker" class="absolute top-[40%] left-[60%] w-4 h-4 rounded-full bg-danger sensor-active cursor-pointer" 
+                             onclick="showSensorDetail(this)" data-id="S286" data-type="烟感传感器" data-status="告警" data-value="85ppm">
+                            <div class="absolute -top-10 left-1/2 transform -translate-x-1/2 bg-danger text-white text-xs px-2 py-1 rounded whitespace-nowrap hidden sensor-tooltip">
+                                烟感传感器告警
+                                <div class="absolute -bottom-1 left-1/2 transform -translate-x-1/2 border-t-4 border-t-danger border-x-transparent border-b-transparent"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 模型控制按钮 -->
+                    <div class="mt-4 flex flex-wrap gap-2">
+                        <button class="bg-primary/10 hover:bg-primary/20 text-primary rounded px-3 py-1.5 text-xs transition-colors flex items-center">
+                            <i class="fa fa-building-o mr-1.5"></i> 切换楼层
+                        </button>
+                        <button class="bg-primary/10 hover:bg-primary/20 text-primary rounded px-3 py-1.5 text-xs transition-colors flex items-center">
+                            <i class="fa fa-eye mr-1.5"></i> 显示/隐藏传感器
+                        </button>
+                        <button id="simulate-fire-btn" class="bg-primary/10 hover:bg-primary/20 text-primary rounded px-3 py-1.5 text-xs transition-colors flex items-center">
+                            <i class="fa fa-fire mr-1.5"></i> 模拟火情
+                        </button>
+                        <button class="bg-primary/10 hover:bg-primary/20 text-primary rounded px-3 py-1.5 text-xs transition-colors flex items-center">
+                            <i class="fa fa-download mr-1.5"></i> 导出模型数据
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- 实时告警面板 -->
+                <div class="bg-white rounded-lg shadow-md p-5 panel-border">
+                    <h3 class="font-bold text-primary flex items-center mb-4">
+                        <i class="fa fa-bell mr-2"></i> 实时告警信息
+                    </h3>
+                    
+                    <!-- 告警筛选 -->
+                    <div class="mb-4">
+                        <div class="relative">
+                            <input type="text" placeholder="搜索告警..." class="w-full border border-gray-200 rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary">
+                            <i class="fa fa-search absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                        </div>
+                        <div class="flex flex-wrap gap-2 mt-2">
+                            <button class="bg-danger/10 text-danger rounded px-2 py-1 text-xs">火警</button>
+                            <button class="bg-warning/10 text-warning rounded px-2 py-1 text-xs">故障</button>
+                            <button class="bg-secondary/10 text-secondary rounded px-2 py-1 text-xs">异常</button>
+                            <button class="bg-gray-100 text-gray-600 rounded px-2 py-1 text-xs">全部</button>
+                        </div>
+                    </div>
+                    
+                    <!-- 告警列表 -->
+                    <div class="max-h-[400px] overflow-y-auto pr-1">
+                        <div class="border-l-4 border-danger bg-danger/5 rounded-r p-3 mb-3 cursor-pointer hover:bg-danger/10 transition-colors">
+                            <div class="flex justify-between items-start">
+                                <h4 class="font-medium text-danger">烟感传感器告警</h4>
+                                <span class="text-xs text-gray-500">10:25</span>
+                            </div>
+                            <p class="text-xs text-gray-700 mt-1">5号楼18层 | 传感器ID:S286 | 烟雾浓度:85ppm</p>
+                            <div class="mt-2 flex gap-2">
+                                <button class="bg-danger text-white rounded px-2 py-1 text-xs">查看详情</button>
+                                <button class="bg-white border border-gray-200 rounded px-2 py-1 text-xs">已处理</button>
+                            </div>
+                        </div>
+                        
+                        <div class="border-l-4 border-warning bg-warning/5 rounded-r p-3 mb-3 cursor-pointer hover:bg-warning/10 transition-colors">
+                            <div class="flex justify-between items-start">
+                                <h4 class="font-medium text-warning">喷淋系统故障</h4>
+                                <span class="text-xs text-gray-500">09:42</span>
+                            </div>
+                            <p class="text-xs text-gray-700 mt-1">3号楼7层 | 设备ID:P158 | 水压异常</p>
+                            <div class="mt-2 flex gap-2">
+                                <button class="bg-warning text-white rounded px-2 py-1 text-xs">查看详情</button>
+                                <button class="bg-white border border-gray-200 rounded px-2 py-1 text-xs">派单维修</button>
+                            </div>
+                        </div>
+                        
+                        <div class="border-l-4 border-secondary bg-secondary/5 rounded-r p-3 mb-3 cursor-pointer hover:bg-secondary/10 transition-colors">
+                            <div class="flex justify-between items-start">
+                                <h4 class="font-medium text-secondary">温感数据异常</h4>
+                                <span class="text-xs text-gray-500">08:15</span>
+                            </div>
+                            <p class="text-xs text-gray-700 mt-1">8号楼12层 | 传感器ID:T421 | 温度:42℃</p>
+                            <div class="mt-2 flex gap-2">
+                                <button class="bg-secondary text-white rounded px-2 py-1 text-xs">查看详情</button>
+                                <button class="bg-white border border-gray-200 rounded px-2 py-1 text-xs">确认</button>
+                            </div>
+                        </div>
+                        
+                        <div class="border-l-4 border-gray-300 bg-gray-50 rounded-r p-3 mb-3 cursor-pointer hover:bg-gray-100 transition-colors">
+                            <div class="flex justify-between items-start">
+                                <h4 class="font-medium text-gray-600">消防通道占用</h4>
+                                <span class="text-xs text-gray-500">07:30</span>
+                            </div>
+                            <p class="text-xs text-gray-700 mt-1">2号楼地下车库 | 摄像头ID:C008</p>
+                            <div class="mt-2 flex gap-2">
+                                <button class="bg-gray-600 text-white rounded px-2 py-1 text-xs">查看详情</button>
+                                <button class="bg-white border border-gray-200 rounded px-2 py-1 text-xs">已处理</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button class="w-full mt-4 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded py-2 text-sm transition-colors">
+                        查看全部告警 <i class="fa fa-angle-right ml-1"></i>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2. 数字孪生模型详情 -->
+        <section id="twin-model" class="mb-8">
+            <h2 class="text-lg font-bold mb-5 flex items-center text-primary">
+                <i class="fa fa-cube mr-2"></i> 数字孪生模型详情
+            </h2>
+            
+            <div class="bg-white rounded-lg shadow-md p-5 panel-border mb-6">
+                <!-- 模型控制与信息 -->
+                <div class="flex flex-wrap justify-between items-center mb-5 gap-3">
+                    <div>
+                        <h3 class="font-bold text-dark">高层住宅小区数字孪生模型</h3>
+                        <p class="text-sm text-gray-500">模型版本：v2.5.8 | 更新时间：2026-02-28</p>
+                    </div>
+                    
+                    <div class="flex gap-3">
+                        <button class="bg-primary text-white rounded px-4 py-2 text-sm hover:bg-primary/90 transition-colors flex items-center">
+                            <i class="fa fa-save mr-2"></i> 保存当前视角
+                        </button>
+                        <button class="bg-white border border-primary text-primary rounded px-4 py-2 text-sm hover:bg-primary/5 transition-colors flex items-center">
+                            <i class="fa fa-cog mr-2"></i> 模型设置
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- 模型展示与属性面板 -->
+                <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                    <!-- 主模型视图 - 替换为图片 -->
+                    <div class="lg:col-span-3 bg-gray-900 rounded-lg h-[500px] digital-twin-shadow relative model-img-container">
+                        <!-- 模型图片 -->
+                        <img src="https://picsum.photos/id/1048/1600/900" alt="住宅小区数字孪生全景模型" class="model-img">
+                        
+                        <!-- 楼层选择器 -->
+                        <div class="absolute top-4 left-4 bg-black/60 text-white rounded p-2">
+                            <select class="bg-transparent text-white border border-white/30 rounded px-2 py-1 text-sm">
+                                <option>1号楼</option>
+                                <option>2号楼</option>
+                                <option>3号楼</option>
+                                <option>4号楼</option>
+                                <option>5号楼</option>
+                                <option>6号楼</option>
+                                <option>7号楼</option>
+                                <option>8号楼</option>
+                            </select>
+                            <select class="bg-transparent text-white border border-white/30 rounded px-2 py-1 text-sm ml-2">
+                                <option>1层</option>
+                                <option>2层</option>
+                                <option>3层</option>
+                                <option selected>18层</option>
+                                <option>19层</option>
+                                <option>20层</option>
+                            </select>
+                        </div>
+                        
+                        <!-- 模型工具条 -->
+                        <div class="absolute bottom-4 right-4 bg-black/60 text-white rounded flex flex-col p-1">
+                            <button class="p-2 hover:bg-white/20 rounded"><i class="fa fa-arrows"></i></button>
+                            <button class="p-2 hover:bg-white/20 rounded"><i class="fa fa-expand"></i></button>
+                            <button class="p-2 hover:bg-white/20 rounded"><i class="fa fa-compress"></i></button>
+                            <button class="p-2 hover:bg-white/20 rounded"><i class="fa fa-home"></i></button>
+                        </div>
+                    </div>
+                    
+                    <!-- 属性面板 -->
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <h4 class="font-bold text-primary mb-3 flex items-center">
+                            <i class="fa fa-info-circle mr-2"></i> 模型属性
+                        </h4>
+                        
+                        <!-- 建筑信息 -->
+                        <div class="border-b border-gray-200 pb-3 mb-3">
+                            <h5 class="font-medium text-sm mb-2">建筑基本信息</h5>
+                            <div class="space-y-2 text-xs text-gray-700">
+                                <div class="flex justify-between">
+                                    <span>建筑名称：</span>
+                                    <span class="font-medium">5号楼</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span>建筑高度：</span>
+                                    <span class="font-medium">68米</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span>楼层数：</span>
+                                    <span class="font-medium">22层</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span>建筑面积：</span>
+                                    <span class="font-medium">15,800㎡</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span>住户数：</span>
+                                    <span class="font-medium">264户</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 设备信息 -->
+                        <div class="border-b border-gray-200 pb-3 mb-3">
+                            <h5 class="font-medium text-sm mb-2">消防设备配置</h5>
+                            <div class="space-y-2 text-xs text-gray-700">
+                                <div class="flex justify-between">
+                                    <span>烟感传感器：</span>
+                                    <span class="font-medium">128个</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span>温感传感器：</span>
+                                    <span class="font-medium">96个</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span>喷淋系统：</span>
+                                    <span class="font-medium">48组</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span>消火栓：</span>
+                                    <span class="font-medium">44个</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span>应急广播：</span>
+                                    <span class="font-medium">22个</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 实时状态 -->
+                        <div>
+                            <h5 class="font-medium text-sm mb-2">实时监测状态</h5>
+                            <div class="space-y-2 text-xs text-gray-700">
+                                <div class="flex justify-between items-center">
+                                    <span>设备在线率：</span>
+                                    <div class="flex items-center">
+                                        <span class="font-medium mr-2">99.4%</span>
+                                        <div class="w-16 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                                            <div class="h-full bg-success rounded-full" style="width: 99.4%"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span>告警数量：</span>
+                                    <div class="flex items-center">
+                                        <span class="font-medium mr-2">1</span>
+                                        <span class="bg-danger text-white px-1 rounded text-xs">紧急</span>
+                                    </div>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span>平均温度：</span>
+                                    <span class="font-medium">24℃</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span>平均湿度：</span>
+                                    <span class="font-medium">45%</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <button class="w-full mt-4 bg-primary/10 hover:bg-primary/20 text-primary rounded py-2 text-xs transition-colors">
+                            查看完整设备清单
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 模型功能模块 -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- 设备映射模块 -->
+                <div class="bg-white rounded-lg shadow-md p-5 panel-border card-hover">
+                    <div class="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary mb-4">
+                        <i class="fa fa-link text-xl"></i>
+                    </div>
+                    <h3 class="font-bold text-lg mb-3 text-primary">设备数字映射</h3>
+                    <p class="text-sm text-gray-700 mb-4">
+                        实现物理消防设备与数字孪生模型1:1精准映射，实时同步设备状态、运行参数、告警信息，支持点击查看设备详情。
+                    </p>
+                    <ul class="text-sm text-gray-700 space-y-2 mb-4">
+                        <li class="flex items-start">
+                            <i class="fa fa-check text-success mt-1 mr-2"></i>
+                            <span>传感器数据实时同步（1秒刷新）</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fa fa-check text-success mt-1 mr-2"></i>
+                            <span>设备故障自动定位与标记</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fa fa-check text-success mt-1 mr-2"></i>
+                            <span>设备生命周期管理</span>
+                        </li>
+                    </ul>
+                    <button class="w-full bg-white border border-primary text-primary hover:bg-primary/5 rounded py-2 text-sm transition-colors">
+                        查看设备映射详情
+                    </button>
+                </div>
+                
+                <!-- 空间分析模块 -->
+                <div class="bg-white rounded-lg shadow-md p-5 panel-border card-hover">
+                    <div class="w-12 h-12 rounded-full bg-secondary/10 flex items-center justify-center text-secondary mb-4">
+                        <i class="fa fa-map text-xl"></i>
+                    </div>
+                    <h3 class="font-bold text-lg mb-3 text-secondary">三维空间分析</h3>
+                    <p class="text-sm text-gray-700 mb-4">
+                        基于数字孪生模型进行三维空间分析，包括消防通道规划、疏散路径模拟、救援路线优化、消防设施覆盖范围分析。
+                    </p>
+                    <ul class="text-sm text-gray-700 space-y-2 mb-4">
+                        <li class="flex items-start">
+                            <i class="fa fa-check text-success mt-1 mr-2"></i>
+                            <span>智能疏散路径规划</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fa fa-check text-success mt-1 mr-2"></i>
+                            <span>消防设施覆盖范围分析</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fa fa-check text-success mt-1 mr-2"></i>
+                            <span>救援车辆通行模拟</span>
+                        </li>
+                    </ul>
+                    <button class="w-full bg-white border border-secondary text-secondary hover:bg-secondary/5 rounded py-2 text-sm transition-colors">
+                        启动空间分析
+                    </button>
+                </div>
+                
+                <!-- 模拟推演模块 -->
+                <div class="bg-white rounded-lg shadow-md p-5 panel-border card-hover">
+                    <div class="w-12 h-12 rounded-full bg-warning/10 flex items-center justify-center text-warning mb-4">
+                        <i class="fa fa-fire text-xl"></i>
+                    </div>
+                    <h3 class="font-bold text-lg mb-3 text-warning">火情模拟推演</h3>
+                    <p class="text-sm text-gray-700 mb-4">
+                        基于数字孪生模型进行火情发展模拟、烟雾扩散分析、温度场变化预测，为应急决策提供科学依据。
+                    </p>
+                    <ul class="text-sm text-gray-700 space-y-2 mb-4">
+                        <li class="flex items-start">
+                            <i class="fa fa-check text-success mt-1 mr-2"></i>
+                            <span>多场景火情模拟</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fa fa-check text-success mt-1 mr-2"></i>
+                            <span>烟雾扩散路径预测</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fa fa-check text-success mt-1 mr-2"></i>
+                            <span>灭火方案效果评估</span>
+                        </li>
+                    </ul>
+                    <button class="w-full bg-white border border-warning text-warning hover:bg-warning/5 rounded py-2 text-sm transition-colors">
+                        开始模拟推演
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 其他部分代码保持不变，此处省略 -->
+        
+    </main>
+
+    <!-- 简化版脚本，移除Three.js相关代码 -->
+    <script>
+        // 传感器详情弹窗函数
+        function showSensorDetail(element) {
+            const id = element.dataset.id;
+            const type = element.dataset.type;
+            const status = element.dataset.status;
+            const value = element.dataset.value;
+            
+            alert(`传感器详情：\nID: ${id}\n类型: ${type}\n状态: ${status}\n数值: ${value}`);
+        }
+        
+        // 加载模拟方案函数
+        function loadSimulationScenario(name) {
+            alert(`加载模拟方案：${name}`);
+        }
+        
+        // 模型控制按钮功能
+        function initModelControls() {
+            // 缩放控制（模拟效果）
+            document.getElementById('zoomInBtn')?.addEventListener('click', () => {
+                const img1 = document.querySelector('#twin-container .model-img');
+                const img2 = document.querySelector('#main-twin-view .model-img');
+                
+                if (img1) img1.style.transform = 'scale(1.2)';
+                if (img2) img2.style.transform = 'scale(1.2)';
+            });
+            
+            document.getElementById('zoomOutBtn')?.addEventListener('click', () => {
+                const img1 = document.querySelector('#twin-container .model-img');
+                const img2 = document.querySelector('#main-twin-view .model-img');
+                
+                if (img1) img1.style.transform = 'scale(0.8)';
+                if (img2) img2.style.transform = 'scale(0.8)';
+            });
+            
+            // 重置视角
+            document.getElementById('resetViewBtn')?.addEventListener('click', () => {
+                const img1 = document.querySelector('#twin-container .model-img');
+                const img2 = document.querySelector('#main-twin-view .model-img');
+                
+                if (img1) img1.style.transform = 'scale(1)';
+                if (img2) img2.style.transform = 'scale(1)';
+            });
+            
+            // 模拟火情按钮
+            document.getElementById('simulate-fire-btn')?.addEventListener('click', () => {
+                alert('启动火情模拟，模型将显示火势蔓延效果');
+            });
+        }
+        
+        // 初始化图表
+        function initCharts() {
+            // 温度图表
+            const tempCtx = document.getElementById('temperatureChart');
+            if (tempCtx) {
+                new Chart(tempCtx, {
+                    type: 'line',
+                    data: {
+                        labels: ['08:00', '08:30', '09:00', '09:30', '10:00', '10:30', '11:00'],
+                        datasets: [{
+                            label: '温度 (℃)',
+                            data: [24, 25, 26, 30, 35, 40, 42],
+                            borderColor: '#FF4D4F',
+                            backgroundColor: 'rgba(255, 77, 79, 0.1)',
+                            tension: 0.3,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: false,
+                                min: 20
+                            }
+                        }
+                    }
+                });
+            }
+            
+            // 烟雾浓度图表
+            const smokeCtx = document.getElementById('smokeChart');
+            if (smokeCtx) {
+                new Chart(smokeCtx, {
+                    type: 'line',
+                    data: {
+                        labels: ['08:00', '08:30', '09:00', '09:30', '10:00', '10:30', '11:00'],
+                        datasets: [{
+                            label: '烟雾浓度 (ppm)',
+                            data: [0, 0, 5, 15, 35, 60, 85],
+                            borderColor: '#FFAA33',
+                            backgroundColor: 'rgba(255, 170, 51, 0.1)',
+                            tension: 0.3,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            }
+        }
+        
+        // 页面加载完成后初始化
+        window.addEventListener('DOMContentLoaded', () => {
+            // 初始化模型控制
+            initModelControls();
+            
+            // 初始化图表
+            initCharts();
+            
+            // 模拟演练按钮
+            document.getElementById('toggleSimulationBtn')?.addEventListener('click', function() {
+                if (this.innerHTML.includes('启动')) {
+                    this.innerHTML = '<i class="fa fa-pause mr-1.5"></i> 暂停模拟演练';
+                    document.getElementById('system-status-text').textContent = '系统状态：模拟演练中';
+                    document.getElementById('system-status-dot').classList.remove('bg-success');
+                    document.getElementById('system-status-dot').classList.add('bg-warning');
+                } else {
+                    this.innerHTML = '<i class="fa fa-play mr-1.5"></i> 启动模拟演练';
+                    document.getElementById('system-status-text').textContent = '系统状态：正常运行';
+                    document.getElementById('system-status-dot').classList.remove('bg-warning');
+                    document.getElementById('system-status-dot').classList.add('bg-success');
+                }
+            });
+            
+            // 火情模拟按钮
+            const startSimulationBtn = document.getElementById('startSimulationBtn');
+            const simPlayBtn = document.getElementById('simPlayBtn');
+            const simPauseBtn = document.getElementById('simPauseBtn');
+            const simResetBtn = document.getElementById('simResetBtn');
+            
+            startSimulationBtn?.addEventListener('click', () => {
+                simPlayBtn.disabled = false;
+                simPauseBtn.disabled = true;
+                simResetBtn.disabled = false;
+                document.getElementById('simulation-loading').style.display = 'none';
+                alert('火情模拟已启动，您可以使用播放/暂停按钮控制模拟过程');
+            });
+            
+            simPlayBtn?.addEventListener('click', () => {
+                simPlayBtn.disabled = true;
+                simPauseBtn.disabled = false;
+                // 更新模拟时间
+                let minutes = 0;
+                const timer = setInterval(() => {
+                    minutes++;
+                    const hours = Math.floor(minutes / 60);
+                    const mins = minutes % 60;
+                    document.getElementById('simulation-time').textContent = 
+                        `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
+                    
+                    if (simPlayBtn.disabled === false) {
+                        clearInterval(timer);
+                    }
+                }, 1000);
+            });
+            
+            simPauseBtn?.addEventListener('click', () => {
+                simPlayBtn.disabled = false;
+                simPauseBtn.disabled = true;
+            });
+            
+            simResetBtn?.addEventListener('click', () => {
+                simPlayBtn.disabled = false;
+                simPauseBtn.disabled = true;
+                document.getElementById('simulation-time').textContent = '00:00';
+            });
+            
+            // 应用参数按钮
+            document.getElementById('apply-params-btn')?.addEventListener('click', () => {
+                const location = document.getElementById('fire-location').value;
+                const type = document.getElementById('fire-type').value;
+                const temp = document.getElementById('env-temp').value;
+                const humidity = document.getElementById('env-humidity').value;
+                const wind = document.getElementById('wind-speed').value;
+                const duration = document.getElementById('simulation-duration').value;
+                
+                alert(`模拟参数已应用：
+起火位置：${location}
+起火类型：${type}
+环境温度：${temp}℃
+环境湿度：${humidity}%
+风速：${wind}m/s
+模拟时长：${duration}分钟`);
+            });
+        });
+    </script>
+</body>
+</html>
