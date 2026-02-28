@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>消防实时数据处理系统</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+    
+    <!-- 配置Tailwind自定义样式 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#e63946', // 消防红
+                        secondary: '#1d3557', // 深蓝
+                        warning: '#f77f00', // 警告橙
+                        normal: '#43aa8b', // 正常绿
+                        info: '#0077b6', // 信息蓝
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .card-shadow {
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            }
+            .animate-pulse-slow {
+                animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans text-gray-800">
+    <!-- 顶部导航栏 -->
+    <header class="bg-primary text-white shadow-md fixed w-full top-0 z-50">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <i class="fa fa-fire text-2xl"></i>
+                <h1 class="text-xl md:text-2xl font-bold">消防实时数据处理系统</h1>
+            </div>
+            <div class="flex items-center space-x-4">
+                <div class="hidden md:flex items-center">
+                    <i class="fa fa-clock-o mr-2"></i>
+                    <span id="current-time">2024-01-01 00:00:00</span>
+                </div>
+                <button id="refresh-btn" class="bg-white text-primary px-3 py-1 rounded-md hover:bg-gray-100 transition">
+                    <i class="fa fa-refresh mr-1"></i>刷新
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主要内容区域 -->
+    <main class="container mx-auto px-4 pt-24 pb-10">
+        <!-- 概览卡片 -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <div class="bg-white rounded-lg p-4 card-shadow">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-gray-500 text-sm">监测点位总数</p>
+                        <h3 class="text-2xl font-bold" id="total-points">128</h3>
+                    </div>
+                    <div class="bg-primary/10 text-primary p-2 rounded-full">
+                        <i class="fa fa-map-marker"></i>
+                    </div>
+                </div>
+                <div class="mt-2 text-xs text-gray-500">
+                    <span class="text-normal"><i class="fa fa-arrow-up"></i> 5.2%</span> 较昨日
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-lg p-4 card-shadow">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-gray-500 text-sm">在线设备数</p>
+                        <h3 class="text-2xl font-bold" id="online-devices">116</h3>
+                    </div>
+                    <div class="bg-normal/10 text-normal p-2 rounded-full">
+                        <i class="fa fa-wifi"></i>
+                    </div>
+                </div>
+                <div class="mt-2 text-xs text-gray-500">
+                    <span class="text-normal"><i class="fa fa-arrow-up"></i> 2.8%</span> 较昨日
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-lg p-4 card-shadow">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-gray-500 text-sm">今日告警数</p>
+                        <h3 class="text-2xl font-bold text-warning" id="today-alarms">8</h3>
+                    </div>
+                    <div class="bg-warning/10 text-warning p-2 rounded-full">
+                        <i class="fa fa-exclamation-triangle"></i>
+                    </div>
+                </div>
+                <div class="mt-2 text-xs text-gray-500">
+                    <span class="text-warning"><i class="fa fa-arrow-up"></i> 16.7%</span> 较昨日
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-lg p-4 card-shadow">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-gray-500 text-sm">处理完成率</p>
+                        <h3 class="text-2xl font-bold" id="process-rate">92.5%</h3>
+                    </div>
+                    <div class="bg-info/10 text-info p-2 rounded-full">
+                        <i class="fa fa-check-circle"></i>
+                    </div>
+                </div>
+                <div class="mt-2 text-xs text-gray-500">
+                    <span class="text-normal"><i class="fa fa-arrow-up"></i> 3.1%</span> 较昨日
+                </div>
+            </div>
+        </div>
+
+        <!-- 数据监控区域 -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+            <!-- 实时数据图表 -->
+            <div class="lg:col-span-2 bg-white rounded-lg p-4 card-shadow h-80">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-lg font-bold">实时温度/烟雾浓度监测</h2>
+                    <div class="flex space-x-2">
+                        <button class="bg-gray-100 px-3 py-1 rounded text-sm hover:bg-gray-200 transition" data-period="hour">近1小时</button>
+                        <button class="bg-primary text-white px-3 py-1 rounded text-sm hover:bg-primary/90 transition" data-period="day">近24小时</button>
+                        <button class="bg-gray-100 px-3 py-1 rounded text-sm hover:bg-gray-200 transition" data-period="week">近7天</button>
+                    </div>
+                </div>
+                <canvas id="realtime-chart"></canvas>
+            </div>
+            
+            <!-- 告警列表 -->
+            <div class="bg-white rounded-lg p-4 card-shadow">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-lg font-bold">最新告警信息</h2>
+                    <span class="bg-warning/10 text-warning px-2 py-1 rounded text-xs">
+                        <i class="fa fa-bell"></i> 8条未处理
+                    </span>
+                </div>
+                <div class="overflow-y-auto h-64" id="alarm-list">
+                    <!-- 告警项 -->
+                    <div class="border-b border-gray-100 pb-3 mb-3 hover:bg-gray-50 p-2 rounded transition cursor-pointer">
+                        <div class="flex justify-between">
+                            <span class="font-medium">高温告警</span>
+                            <span class="text-xs text-gray-500">10:23:45</span>
+                        </div>
+                        <p class="text-sm text-gray-600 mt-1">1号仓库 - 温度达到68℃（阈值60℃）</p>
+                        <div class="flex space-x-2 mt-2">
+                            <button class="bg-info/10 text-info px-2 py-1 rounded text-xs hover:bg-info/20 transition">
+                                <i class="fa fa-eye"></i> 查看
+                            </button>
+                            <button class="bg-normal/10 text-normal px-2 py-1 rounded text-xs hover:bg-normal/20 transition">
+                                <i class="fa fa-check"></i> 处理
+                            </button>
+                        </div>
+                    </div>
+                    <div class="border-b border-gray-100 pb-3 mb-3 hover:bg-gray-50 p-2 rounded transition cursor-pointer">
+                        <div class="flex justify-between">
+                            <span class="font-medium">烟雾告警</span>
+                            <span class="text-xs text-gray-500">09:15:22</span>
+                        </div>
+                        <p class="text-sm text-gray-600 mt-1">2号通道 - 烟雾浓度超标30%</p>
+                        <div class="flex space-x-2 mt-2">
+                            <button class="bg-info/10 text-info px-2 py-1 rounded text-xs hover:bg-info/20 transition">
+                                <i class="fa fa-eye"></i> 查看
+                            </button>
+                            <button class="bg-normal/10 text-normal px-2 py-1 rounded text-xs hover:bg-normal/20 transition">
+                                <i class="fa fa-check"></i> 处理
+                            </button>
+                        </div>
+                    </div>
+                    <div class="border-b border-gray-100 pb-3 mb-3 hover:bg-gray-50 p-2 rounded transition cursor-pointer">
+                        <div class="flex justify-between">
+                            <span class="font-medium">设备离线</span>
+                            <span class="text-xs text-gray-500">08:40:11</span>
+                        </div>
+                        <p class="text-sm text-gray-600 mt-1">3号配电室 - 温感探测器离线</p>
+                        <div class="flex space-x-2 mt-2">
+                            <button class="bg-info/10 text-info px-2 py-1 rounded text-xs hover:bg-info/20 transition">
+                                <i class="fa fa-eye"></i> 查看
+                            </button>
+                            <button class="bg-normal/10 text-normal px-2 py-1 rounded text-xs hover:bg-normal/20 transition">
+                                <i class="fa fa-check"></i> 处理
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 设备状态表格 -->
+        <div class="bg-white rounded-lg p-4 card-shadow mb-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-bold">设备状态列表</h2>
+                <div class="flex space-x-2">
+                    <input type="text" placeholder="搜索设备/点位" class="border border-gray-200 rounded px-3 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-primary">
+                    <button class="bg-primary text-white px-3 py-1 rounded text-sm hover:bg-primary/90 transition">
+                        <i class="fa fa-search"></i> 搜索
+                    </button>
+                </div>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full">
+                    <thead>
+                        <tr class="border-b border-gray-200">
+                            <th class="text-left py-3 px-4 text-sm font-medium text-gray-600">设备编号</th>
+                            <th class="text-left py-3 px-4 text-sm font-medium text-gray-600">点位名称</th>
+                            <th class="text-left py-3 px-4 text-sm font-medium text-gray-600">设备类型</th>
+                            <th class="text-left py-3 px-4 text-sm font-medium text-gray-600">状态</th>
+                            <th class="text-left py-3 px-4 text-sm font-medium text-gray-600">最后上报时间</th>
+                            <th class="text-left py-3 px-4 text-sm font-medium text-gray-600">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="device-table-body">
+                        <!-- 表格内容会通过JS动态渲染 -->
+                    </tbody>
+                </table>
+            </div>
+            <div class="flex justify-between items-center mt-4 text-sm">
+                <span id="page-info" class="text-gray-600">共 128 条记录，显示 1-3 条</span>
+                <div class="flex space-x-1" id="pagination">
+                    <button id="prev-page" class="border border-gray-200 px-3 py-1 rounded hover:bg-gray-50" disabled>上一页</button>
+                    <button class="page-btn border border-primary bg-primary text-white px-3 py-1 rounded" data-page="1">1</button>
+                    <button class="page-btn border border-gray-200 px-3 py-1 rounded hover:bg-gray-50" data-page="2">2</button>
+                    <button class="page-btn border border-gray-200 px-3 py-1 rounded hover:bg-gray-50" data-page="3">3</button>
+                    <button id="next-page" class="border border-gray-200 px-3 py-1 rounded hover:bg-gray-50">下一页</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="bg-secondary text-white py-4">
+        <div class="container mx-auto px-4 text-center text-sm">
+            <p>© 2024 消防实时数据处理系统 - 版权所有</p>
+        </div>
+    </footer>
+
+    <!-- JavaScript 交互逻辑 -->
+    <script>
+        // 1. 实时更新时间
+        function updateCurrentTime() {
+            const now = new Date();
+            const formattedTime = now.toLocaleString('zh-CN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            }).replace(/\//g, '-');
+            document.getElementById('current-time').textContent = formattedTime;
+        }
+        
+        // 每秒更新时间
+        setInterval(updateCurrentTime, 1000);
+        // 页面加载时立即更新一次
+        updateCurrentTime();
+
+        // 2. 模拟随机数据更新（模拟实时数据）
+        function generateRandomData() {
+            // 生成小幅波动的随机数
+            const totalPoints = 120 + Math.floor(Math.random() * 15);
+            const onlineDevices = totalPoints - Math.floor(Math.random() * 10);
+            const todayAlarms = Math.floor(Math.random() * 15);
+            const processRate = (90 + Math.random() * 5).toFixed(1);
+
+            // 更新页面数据
+            document.getElementById('total-points').textContent = totalPoints;
+            document.getElementById('online-devices').textContent = onlineDevices;
+            document.getElementById('today-alarms').textContent = todayAlarms;
+            document.getElementById('process-rate').textContent = processRate + '%';
+        }
+
+        // 3. 刷新按钮点击事件
+        document.getElementById('refresh-btn').addEventListener('click', function() {
+            // 添加加载动画
+            this.innerHTML = '<i class="fa fa-spinner fa-spin mr-1"></i>刷新中';
+            
+            // 模拟数据加载延迟
+            setTimeout(() => {
+                generateRandomData();
+                updateChart(); // 刷新图表数据
+                this.innerHTML = '<i class="fa fa-refresh mr-1"></i>刷新';
+                // 提示刷新成功
+                alert('数据已成功刷新！');
+            }, 800);
+        });
+
+        // 4. 初始化图表
+        let realtimeChart;
+        function initChart() {
+            const ctx = document.getElementById('realtime-chart').getContext('2d');
+            
+            // 生成24小时的模拟数据
+            const hours = Array.from({length: 24}, (_, i) => i + ':00');
+            const tempData = Array.from({length: 24}, () => 25 + Math.random() * 20);
+            const smokeData = Array.from({length: 24}, () => Math.random() * 100);
+
+            realtimeChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: hours,
+                    datasets: [
+                        {
+                            label: '温度 (℃)',
+                            data: tempData,
+                            borderColor: '#e63946',
+                            backgroundColor: 'rgba(230, 57, 70, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        },
+                        {
+                            label: '烟雾浓度 (%)',
+                            data: smokeData,
+                            borderColor: '#0077b6',
+                            backgroundColor: 'rgba(0, 119, 182, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        // 更新图表数据
+        function updateChart() {
+            // 生成新的随机数据
+            const newTempData = Array.from({length: 24}, () => 25 + Math.random() * 20);
+            const newSmokeData = Array.from({length: 24}, () => Math.random() * 100);
+            
+            // 更新图表
+            realtimeChart.data.datasets[0].data = newTempData;
+            realtimeChart.data.datasets[1].data = newSmokeData;
+            realtimeChart.update();
+        }
+
+        // 5. 时间周期切换按钮事件
+        document.querySelectorAll('[data-period]').forEach(btn => {
+            btn.addEventListener('click', function() {
+                // 移除所有按钮的激活状态
+                document.querySelectorAll('[data-period]').forEach(b => {
+                    b.classList.remove('bg-primary', 'text-white');
+                    b.classList.add('bg-gray-100', 'hover:bg-gray-200');
+                });
+                
+                // 添加当前按钮的激活状态
+                this.classList.remove('bg-gray-100', 'hover:bg-gray-200');
+                this.classList.add('bg-primary', 'text-white');
+                
+                // 模拟切换不同时间段的数据
+                const period = this.dataset.period;
+                let labels;
+                
+                if (period === 'hour') {
+                    labels = Array.from({length: 60}, (_, i) => i + '分');
+                } else if (period === 'day') {
+                    labels = Array.from({length: 24}, (_, i) => i + ':00');
+                } else {
+                    labels = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
+                }
+                
+                // 更新图表标签
+                realtimeChart.data.labels = labels;
+                updateChart(); // 更新数据
+            });
+        });
+
+        // 6. 告警列表点击事件
+        document.querySelectorAll('#alarm-list > div').forEach(item => {
+            item.addEventListener('click', function() {
+                const alarmText = this.querySelector('p').textContent;
+                alert(`查看告警详情：${alarmText}`);
+            });
+        });
+
+        // 7. 分页功能实现
+        // 模拟设备数据（总共128条，每页3条）
+        const totalDevices = 128;
+        const pageSize = 3;
+        let currentPage = 1;
+        
+        // 生成模拟设备数据
+        function generateDeviceData(page) {
+            const start = (page - 1) * pageSize + 1;
+            const end = Math.min(page * pageSize, totalDevices);
+            const deviceTypes = ['温度传感器', '烟雾传感器', '温感探测器', '火焰探测器', '水压传感器'];
+            const statusList = [
+                { text: '在线', class: 'bg-normal/10 text-normal' },
+                { text: '告警', class: 'bg-warning/10 text-warning' },
+                { text: '离线', class: 'bg-primary/10 text-primary' }
+            ];
+            
+            let html = '';
+            for (let i = start; i <= end; i++) {
+                const deviceId = `XF-${String(i).padStart(3, '0')}`;
+                const location = `${Math.ceil(i/10)}号${['仓库', '通道', '配电室', '机房', '走廊'][i%5]}${['A', 'B', 'C', 'D'][i%4]}区`;
+                const type = deviceTypes[i%deviceTypes.length];
+                const status = statusList[i%statusList.length];
+                const time = `2024-05-20 ${String(8 + i%4).padStart(2, '0')}:${String(10 + i%50).padStart(2, '0')}:${String(10 + i%59).padStart(2, '0')}`;
+                
+                html += `
+                <tr class="border-b border-gray-100 hover:bg-gray-50">
+                    <td class="py-3 px-4 text-sm">${deviceId}</td>
+                    <td class="py-3 px-4 text-sm">${location}</td>
+                    <td class="py-3 px-4 text-sm">${type}</td>
+                    <td class="py-3 px-4 text-sm"><span class="${status.class} px-2 py-1 rounded text-xs">${status.text}</span></td>
+                    <td class="py-3 px-4 text-sm">${time}</td>
+                    <td class="py-3 px-4 text-sm">
+                        <button class="text-info hover:text-info/80 mr-2 edit-btn"><i class="fa fa-edit"></i></button>
+                        <button class="text-primary hover:text-primary/80 delete-btn"><i class="fa fa-trash"></i></button>
+                    </td>
+                </tr>
+                `;
+            }
+            return html;
+        }
+        
+        // 更新分页状态
+        function updatePagination() {
+            const totalPages = Math.ceil(totalDevices / pageSize);
+            const start = (currentPage - 1) * pageSize + 1;
+            const end = Math.min(currentPage * pageSize, totalDevices);
+            
+            // 更新分页信息文本
+            document.getElementById('page-info').textContent = `共 ${totalDevices} 条记录，显示 ${start}-${end} 条`;
+            
+            // 更新上一页/下一页按钮状态
+            document.getElementById('prev-page').disabled = currentPage === 1;
+            document.getElementById('next-page').disabled = currentPage === totalPages;
+            
+            // 更新页码按钮样式
+            document.querySelectorAll('.page-btn').forEach(btn => {
+                const page = parseInt(btn.dataset.page);
+                if (page === currentPage) {
+                    btn.classList.remove('border-gray-200', 'hover:bg-gray-50');
+                    btn.classList.add('border-primary', 'bg-primary', 'text-white');
+                } else {
+                    btn.classList.remove('border-primary', 'bg-primary', 'text-white');
+                    btn.classList.add('border-gray-200', 'hover:bg-gray-50');
+                }
+            });
+            
+            // 渲染当前页的设备数据
+            document.getElementById('device-table-body').innerHTML = generateDeviceData(currentPage);
+            
+            // 重新绑定设备列表操作按钮事件
+            bindDeviceTableEvents();
+        }
+        
+        // 绑定设备列表操作按钮事件
+        function bindDeviceTableEvents() {
+            // 编辑按钮
+            document.querySelectorAll('.edit-btn').forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    const deviceId = this.closest('tr').querySelector('td:first-child').textContent;
+                    alert(`进入编辑设备 ${deviceId} 的页面`);
+                });
+            });
+            
+            // 删除按钮
+            document.querySelectorAll('.delete-btn').forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    const deviceId = this.closest('tr').querySelector('td:first-child').textContent;
+                    if (confirm(`确定要删除设备 ${deviceId} 吗？`)) {
+                        alert(`已删除设备 ${deviceId}`);
+                    }
+                });
+            });
+        }
+        
+        // 上一页按钮点击事件
+        document.getElementById('prev-page').addEventListener('click', function() {
+            if (currentPage > 1) {
+                currentPage--;
+                updatePagination();
+            }
+        });
+        
+        // 下一页按钮点击事件
+        document.getElementById('next-page').addEventListener('click', function() {
+            const totalPages = Math.ceil(totalDevices / pageSize);
+            if (currentPage < totalPages) {
+                currentPage++;
+                updatePagination();
+            }
+        });
+        
+        // 页码按钮点击事件
+        document.querySelectorAll('.page-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                currentPage = parseInt(this.dataset.page);
+                updatePagination();
+            });
+        });
+
+        // 页面加载完成后初始化
+        window.addEventListener('DOMContentLoaded', function() {
+            initChart(); // 初始化图表
+            generateRandomData(); // 初始化随机数据
+            updatePagination(); // 初始化分页和设备列表
+            
+            // 每30秒自动刷新一次数据
+            setInterval(generateRandomData, 30000);
+        });
+    </script>
+</body>
+</html>
