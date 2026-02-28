@@ -1,0 +1,992 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>应急指挥调度系统</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+    
+    <!-- 配置Tailwind自定义样式 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        emergency: {
+                            primary: '#0f172a', // 主背景-深蓝黑
+                            secondary: '#1e293b', // 次要背景-深灰蓝
+                            accent: '#0ea5e9', // 强调色-亮蓝
+                            danger: '#ef4444', // 危险色-红
+                            warning: '#f59e0b', // 警告色-黄
+                            success: '#22c55e', // 成功色-绿
+                            info: '#3b82f6', // 信息色-蓝
+                        },
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['Consolas', 'Monaco', 'monospace'],
+                    },
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .panel-shadow {
+                box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            }
+            .btn-hover {
+                transition: all 0.2s ease;
+            }
+            .btn-hover:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(14, 165, 233, 0.4);
+            }
+            .status-blink {
+                animation: blink 1.5s infinite;
+            }
+            @keyframes blink {
+                0%, 100% { opacity: 1; }
+                50% { opacity: 0.5; }
+            }
+            .map-grid {
+                background-image: linear-gradient(rgba(14, 165, 233, 0.1) 1px, transparent 1px),
+                                  linear-gradient(90deg, rgba(14, 165, 233, 0.1) 1px, transparent 1px);
+                background-size: 20px 20px;
+            }
+        }
+    </style>
+</head>
+<body class="bg-emergency-primary text-gray-200 font-sans antialiased">
+    <!-- 顶部导航栏 -->
+    <header class="bg-emergency-secondary border-b border-emergency-accent/30 fixed w-full top-0 z-50">
+        <div class="container mx-auto px-4 py-2 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <i class="fa fa-sitemap text-emergency-accent text-2xl"></i>
+                <h1 class="text-xl font-bold text-white">应急指挥调度系统 V2.0</h1>
+                <span class="bg-emergency-danger text-white text-xs px-2 py-1 rounded-full status-blink">
+                    <i class="fa fa-exclamation-circle mr-1"></i>应急响应中
+                </span>
+            </div>
+            <div class="flex items-center space-x-4">
+                <div class="flex items-center space-x-2">
+                    <i class="fa fa-clock-o text-emergency-accent"></i>
+                    <span id="current-time" class="text-sm">2024-06-15 14:30:25</span>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <img src="https://picsum.photos/id/1005/32/32" alt="用户头像" class="w-8 h-8 rounded-full border-2 border-emergency-accent">
+                    <!-- 关键修改：将张明改为秦鹏程 -->
+                    <span class="text-sm">指挥长：秦鹏程</span>
+                </div>
+                <button id="help-btn" class="bg-emergency-accent/20 hover:bg-emergency-accent/30 px-3 py-1 rounded-md transition btn-hover">
+                    <i class="fa fa-question-circle mr-1"></i>操作指南
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- 操作指南弹窗 -->
+    <div id="help-modal" class="fixed inset-0 flex items-center justify-center z-50 hidden bg-black/70">
+        <div class="bg-emergency-secondary rounded-lg shadow-xl w-full max-w-3xl mx-4 p-6 border border-emergency-accent/50">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-emergency-accent">系统操作指南</h3>
+                <button id="close-help" class="text-gray-400 hover:text-white text-xl">
+                    <i class="fa fa-times"></i>
+                </button>
+            </div>
+            <div class="text-gray-300 space-y-3 max-h-[70vh] overflow-y-auto pr-2">
+                <div class="border-l-4 border-emergency-accent pl-3">
+                    <h4 class="font-bold text-white mb-1">事件接报区</h4>
+                    <p>• 点击"新增事件"按钮可创建新的应急事件</p>
+                    <p>• 点击事件列表中的条目可查看/编辑事件详情</p>
+                    <p>• 点击事件状态标签可修改事件处置状态</p>
+                </div>
+                <div class="border-l-4 border-emergency-warning pl-3 mt-4">
+                    <h4 class="font-bold text-white mb-1">资源调度区</h4>
+                    <p>• 点击资源卡片可查看该类资源的详细部署情况</p>
+                    <p>• 点击"调度"按钮可发起资源调度指令</p>
+                    <p>• 点击"撤回"按钮可撤回已调度的资源</p>
+                </div>
+                <div class="border-l-4 border-emergency-success pl-3 mt-4">
+                    <h4 class="font-bold text-white mb-1">指挥指令区</h4>
+                    <p>• 点击"发布指令"按钮可向指定单位发布指挥指令</p>
+                    <p>• 点击指令列表中的条目可查看指令执行状态</p>
+                    <p>• 点击"确认执行"按钮可标记指令已执行完成</p>
+                </div>
+                <div class="border-l-4 border-emergency-info pl-3 mt-4">
+                    <h4 class="font-bold text-white mb-1">态势展示区</h4>
+                    <p>• 点击地图上的事件标记可查看现场实时信息</p>
+                    <p>• 点击图表区块可查看详细数据统计</p>
+                    <p>• 点击"刷新数据"按钮可更新实时态势数据</p>
+                </div>
+            </div>
+            <div class="mt-6 text-right">
+                <button id="confirm-help" class="bg-emergency-accent text-white px-4 py-2 rounded-md hover:bg-emergency-accent/90 transition btn-hover">
+                    <i class="fa fa-check mr-1"></i>我已了解
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 事件详情弹窗 -->
+    <div id="event-modal" class="fixed inset-0 flex items-center justify-center z-50 hidden bg-black/70">
+        <div class="bg-emergency-secondary rounded-lg shadow-xl w-full max-w-2xl mx-4 p-6 border border-emergency-accent/50">
+            <div class="flex justify-between items-center mb-4">
+                <h3 id="event-modal-title" class="text-xl font-bold text-emergency-accent">事件详情</h3>
+                <button id="close-event" class="text-gray-400 hover:text-white text-xl">
+                    <i class="fa fa-times"></i>
+                </button>
+            </div>
+            <div id="event-modal-content" class="text-gray-300 space-y-4">
+                <!-- 动态填充内容 -->
+            </div>
+            <div class="mt-6 flex justify-end space-x-3">
+                <button id="close-event-btn" class="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 transition">
+                    <i class="fa fa-times mr-1"></i>关闭
+                </button>
+                <button id="dispatch-resource-btn" class="bg-emergency-accent text-white px-4 py-2 rounded-md hover:bg-emergency-accent/90 transition btn-hover">
+                    <i class="fa fa-truck mr-1"></i>调度资源
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 资源调度弹窗 -->
+    <div id="resource-modal" class="fixed inset-0 flex items-center justify-center z-50 hidden bg-black/70">
+        <div class="bg-emergency-secondary rounded-lg shadow-xl w-full max-w-2xl mx-4 p-6 border border-emergency-accent/50">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-emergency-accent">资源调度指令</h3>
+                <button id="close-resource" class="text-gray-400 hover:text-white text-xl">
+                    <i class="fa fa-times"></i>
+                </button>
+            </div>
+            <div class="text-gray-300 space-y-4">
+                <div>
+                    <label class="block text-sm font-medium mb-1 text-white">事件编号</label>
+                    <input type="text" value="EV-20240615-001" readonly class="w-full bg-emergency-primary border border-gray-600 rounded-md px-3 py-2 text-white">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1 text-white">资源类型</label>
+                    <select class="w-full bg-emergency-primary border border-gray-600 rounded-md px-3 py-2 text-white">
+                        <option>消防救援队伍</option>
+                        <option>医疗救护车辆</option>
+                        <option>应急通信设备</option>
+                        <option>抢险救援装备</option>
+                        <option>生活保障物资</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1 text-white">调度数量</label>
+                    <input type="number" value="3" min="1" class="w-full bg-emergency-primary border border-gray-600 rounded-md px-3 py-2 text-white">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1 text-white">目的地</label>
+                    <input type="text" value="XX区XX路XX号（火灾现场）" class="w-full bg-emergency-primary border border-gray-600 rounded-md px-3 py-2 text-white">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1 text-white">调度要求</label>
+                    <textarea rows="3" class="w-full bg-emergency-primary border border-gray-600 rounded-md px-3 py-2 text-white">请于30分钟内到达指定地点，配合现场救援工作，注意行车安全。</textarea>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1 text-white">接收单位</label>
+                    <select class="w-full bg-emergency-primary border border-gray-600 rounded-md px-3 py-2 text-white">
+                        <option>市消防救援支队</option>
+                        <option>市急救中心</option>
+                        <option>市应急通信保障中心</option>
+                        <option>市应急物资储备库</option>
+                        <option>区应急管理局</option>
+                    </select>
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end space-x-3">
+                <button id="cancel-resource-btn" class="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 transition">
+                    <i class="fa fa-times mr-1"></i>取消
+                </button>
+                <button id="confirm-resource-btn" class="bg-emergency-success text-white px-4 py-2 rounded-md hover:bg-emergency-success/90 transition btn-hover">
+                    <i class="fa fa-paper-plane mr-1"></i>发布调度指令
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 指挥指令弹窗 -->
+    <div id="command-modal" class="fixed inset-0 flex items-center justify-center z-50 hidden bg-black/70">
+        <div class="bg-emergency-secondary rounded-lg shadow-xl w-full max-w-2xl mx-4 p-6 border border-emergency-accent/50">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-emergency-accent">发布指挥指令</h3>
+                <button id="close-command" class="text-gray-400 hover:text-white text-xl">
+                    <i class="fa fa-times"></i>
+                </button>
+            </div>
+            <div class="text-gray-300 space-y-4">
+                <div>
+                    <label class="block text-sm font-medium mb-1 text-white">指令标题</label>
+                    <input type="text" placeholder="输入指令标题" class="w-full bg-emergency-primary border border-gray-600 rounded-md px-3 py-2 text-white">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1 text-white">指令级别</label>
+                    <div class="flex space-x-3">
+                        <label class="flex items-center space-x-2">
+                            <input type="radio" name="command-level" checked class="accent-emergency-accent">
+                            <span>一般指令</span>
+                        </label>
+                        <label class="flex items-center space-x-2">
+                            <input type="radio" name="command-level" class="accent-emergency-warning">
+                            <span>紧急指令</span>
+                        </label>
+                        <label class="flex items-center space-x-2">
+                            <input type="radio" name="command-level" class="accent-emergency-danger">
+                            <span>特急指令</span>
+                        </label>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1 text-white">接收单位</label>
+                    <select multiple class="w-full bg-emergency-primary border border-gray-600 rounded-md px-3 py-2 text-white h-24">
+                        <option selected>市消防救援支队</option>
+                        <option selected>市公安局</option>
+                        <option>市卫健委</option>
+                        <option>市交通局</option>
+                        <option>区政府</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1 text-white">指令内容</label>
+                    <textarea rows="5" placeholder="输入详细指挥指令内容..." class="w-full bg-emergency-primary border border-gray-600 rounded-md px-3 py-2 text-white">各单位注意：
+1. 消防支队立即组织力量控制火势蔓延，优先抢救被困人员
+2. 公安部门做好现场警戒和交通管制
+3. 卫健部门做好伤员救治准备
+4. 各单位每15分钟上报一次现场情况</textarea>
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end space-x-3">
+                <button id="cancel-command-btn" class="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 transition">
+                    <i class="fa fa-times mr-1"></i>取消
+                </button>
+                <button id="confirm-command-btn" class="bg-emergency-danger text-white px-4 py-2 rounded-md hover:bg-emergency-danger/90 transition btn-hover">
+                    <i class="fa fa-bullhorn mr-1"></i>立即发布
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 主要内容区域 -->
+    <main class="container mx-auto px-4 pt-16 pb-10">
+        <!-- 系统状态概览 -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6 mb-6">
+            <div class="bg-emergency-secondary rounded-lg p-4 panel-shadow border-l-4 border-emergency-accent">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-sm text-gray-400">当前事件数</p>
+                        <h3 class="text-2xl font-bold text-white mt-1">3 <span class="text-xs text-emergency-danger">(1个紧急)</span></h3>
+                    </div>
+                    <i class="fa fa-exclamation-triangle text-emergency-accent text-2xl"></i>
+                </div>
+                <div class="mt-3 text-xs text-gray-400">
+                    <span class="inline-block px-2 py-1 bg-emergency-danger/20 text-emergency-danger rounded mr-2">火灾 ×1</span>
+                    <span class="inline-block px-2 py-1 bg-emergency-warning/20 text-emergency-warning rounded mr-2">交通事故 ×1</span>
+                    <span class="inline-block px-2 py-1 bg-emergency-info/20 text-emergency-info rounded">燃气泄漏 ×1</span>
+                </div>
+            </div>
+            
+            <div class="bg-emergency-secondary rounded-lg p-4 panel-shadow border-l-4 border-emergency-warning">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-sm text-gray-400">已调度资源</p>
+                        <h3 class="text-2xl font-bold text-white mt-1">18 <span class="text-xs text-gray-400">单位</span></h3>
+                    </div>
+                    <i class="fa fa-truck text-emergency-warning text-2xl"></i>
+                </div>
+                <div class="mt-3 text-xs text-gray-400">
+                    <span class="inline-block px-2 py-1 bg-emergency-success/20 text-emergency-success rounded mr-2">已到位 ×12</span>
+                    <span class="inline-block px-2 py-1 bg-emergency-warning/20 text-emergency-warning rounded">途中 ×6</span>
+                </div>
+            </div>
+            
+            <div class="bg-emergency-secondary rounded-lg p-4 panel-shadow border-l-4 border-emergency-success">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-sm text-gray-400">已发布指令</p>
+                        <h3 class="text-2xl font-bold text-white mt-1">7 <span class="text-xs text-gray-400">条</span></h3>
+                    </div>
+                    <i class="fa fa-bullhorn text-emergency-success text-2xl"></i>
+                </div>
+                <div class="mt-3 text-xs text-gray-400">
+                    <span class="inline-block px-2 py-1 bg-emergency-success/20 text-emergency-success rounded mr-2">已执行 ×5</span>
+                    <span class="inline-block px-2 py-1 bg-emergency-info/20 text-emergency-info rounded">执行中 ×2</span>
+                </div>
+            </div>
+            
+            <div class="bg-emergency-secondary rounded-lg p-4 panel-shadow border-l-4 border-emergency-danger">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-sm text-gray-400">响应时长</p>
+                        <h3 class="text-2xl font-bold text-white mt-1">8 <span class="text-xs text-gray-400">分钟</span></h3>
+                    </div>
+                    <i class="fa fa-clock-o text-emergency-danger text-2xl"></i>
+                </div>
+                <div class="mt-3 text-xs text-gray-400">
+                    <div class="w-full bg-gray-700 rounded-full h-2 mt-1">
+                        <div class="bg-emergency-success h-2 rounded-full" style="width: 85%"></div>
+                    </div>
+                    <p class="mt-1">目标：≤10分钟 (当前达标)</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 核心功能区 -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- 左侧：事件接报与处置 -->
+            <div class="lg:col-span-1 space-y-6">
+                <!-- 事件接报面板 -->
+                <div class="bg-emergency-secondary rounded-lg panel-shadow overflow-hidden">
+                    <div class="bg-emergency-accent/20 px-4 py-3 border-b border-emergency-accent/30 flex justify-between items-center">
+                        <h2 class="font-bold text-white flex items-center">
+                            <i class="fa fa-bell mr-2"></i>事件接报处置
+                        </h2>
+                        <button id="add-event-btn" class="bg-emergency-accent text-white px-3 py-1 rounded-md text-sm hover:bg-emergency-accent/90 transition btn-hover">
+                            <i class="fa fa-plus mr-1"></i>新增事件
+                        </button>
+                    </div>
+                    <div class="p-4 max-h-[400px] overflow-y-auto">
+                        <div class="space-y-3">
+                            <!-- 事件1 -->
+                            <div class="bg-emergency-primary rounded-lg p-3 border-l-4 border-emergency-danger hover:bg-emergency-primary/80 transition cursor-pointer event-item"
+                                 data-event='{"id":"EV-20240615-001","type":"火灾事故","location":"XX区XX路XX号商业综合体","level":"重大","status":"处置中","time":"2024-06-15 14:10:00","desc":"商业综合体4楼发生火灾，过火面积约500㎡，有人员被困，请求紧急救援。","progress":"35%"}'>
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <h4 class="font-bold text-white">重大火灾事故 <span class="text-xs bg-emergency-danger text-white px-1 py-0 rounded ml-2">重大</span></h4>
+                                        <p class="text-sm text-gray-400 mt-1">XX区XX路XX号商业综合体</p>
+                                        <p class="text-xs text-gray-500 mt-1">接报时间：2024-06-15 14:10:00</p>
+                                    </div>
+                                    <span class="bg-emergency-warning/20 text-emergency-warning text-xs px-2 py-1 rounded-full">处置中</span>
+                                </div>
+                                <div class="mt-2">
+                                    <div class="w-full bg-gray-700 rounded-full h-1.5">
+                                        <div class="bg-emergency-danger h-1.5 rounded-full" style="width: 35%"></div>
+                                    </div>
+                                    <p class="text-xs text-gray-400 mt-1">处置进度：35%</p>
+                                </div>
+                            </div>
+                            
+                            <!-- 事件2 -->
+                            <div class="bg-emergency-primary rounded-lg p-3 border-l-4 border-emergency-warning hover:bg-emergency-primary/80 transition cursor-pointer event-item"
+                                 data-event='{"id":"EV-20240615-002","type":"交通事故","location":"XX高速K125处","level":"较大","status":"处置中","time":"2024-06-15 13:45:00","desc":"多车连环相撞，造成交通中断，有人员受伤，需要救援和交通疏导。","progress":"60%"}'>
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <h4 class="font-bold text-white">较大交通事故 <span class="text-xs bg-emergency-warning text-white px-1 py-0 rounded ml-2">较大</span></h4>
+                                        <p class="text-sm text-gray-400 mt-1">XX高速K125处</p>
+                                        <p class="text-xs text-gray-500 mt-1">接报时间：2024-06-15 13:45:00</p>
+                                    </div>
+                                    <span class="bg-emergency-warning/20 text-emergency-warning text-xs px-2 py-1 rounded-full">处置中</span>
+                                </div>
+                                <div class="mt-2">
+                                    <div class="w-full bg-gray-700 rounded-full h-1.5">
+                                        <div class="bg-emergency-warning h-1.5 rounded-full" style="width: 60%"></div>
+                                    </div>
+                                    <p class="text-xs text-gray-400 mt-1">处置进度：60%</p>
+                                </div>
+                            </div>
+                            
+                            <!-- 事件3 -->
+                            <div class="bg-emergency-primary rounded-lg p-3 border-l-4 border-emergency-info hover:bg-emergency-primary/80 transition cursor-pointer event-item"
+                                 data-event='{"id":"EV-20240615-003","type":"燃气泄漏","location":"XX小区15号楼","level":"一般","status":"已派单","time":"2024-06-15 14:00:00","desc":"居民反映燃气泄漏，有刺鼻气味，暂无人员伤亡报告。","progress":"10%"}'>
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <h4 class="font-bold text-white">一般燃气泄漏 <span class="text-xs bg-emergency-info text-white px-1 py-0 rounded ml-2">一般</span></h4>
+                                        <p class="text-sm text-gray-400 mt-1">XX小区15号楼</p>
+                                        <p class="text-xs text-gray-500 mt-1">接报时间：2024-06-15 14:00:00</p>
+                                    </div>
+                                    <span class="bg-emergency-info/20 text-emergency-info text-xs px-2 py-1 rounded-full">已派单</span>
+                                </div>
+                                <div class="mt-2">
+                                    <div class="w-full bg-gray-700 rounded-full h-1.5">
+                                        <div class="bg-emergency-info h-1.5 rounded-full" style="width: 10%"></div>
+                                    </div>
+                                    <p class="text-xs text-gray-400 mt-1">处置进度：10%</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 资源调度面板 -->
+                <div class="bg-emergency-secondary rounded-lg panel-shadow overflow-hidden">
+                    <div class="bg-emergency-warning/20 px-4 py-3 border-b border-emergency-warning/30">
+                        <h2 class="font-bold text-white flex items-center">
+                            <i class="fa fa-truck mr-2"></i>应急资源调度
+                        </h2>
+                    </div>
+                    <div class="p-4 max-h-[350px] overflow-y-auto">
+                        <div class="grid grid-cols-2 gap-3">
+                            <!-- 消防资源 -->
+                            <div class="bg-emergency-primary rounded-lg p-3 hover:bg-emergency-primary/80 transition cursor-pointer resource-card">
+                                <div class="flex justify-between items-center mb-2">
+                                    <h4 class="font-bold text-white text-sm">消防救援队伍</h4>
+                                    <i class="fa fa-fire-extinguisher text-emergency-danger"></i>
+                                </div>
+                                <div class="text-xs text-gray-400 mb-2">
+                                    <p>可用：<span class="text-white">12</span> 支队伍</p>
+                                    <p>已调度：<span class="text-emergency-warning">8</span> 支队伍</p>
+                                </div>
+                                <button class="w-full bg-emergency-danger/20 text-emergency-danger text-xs py-1 rounded hover:bg-emergency-danger/30 transition">
+                                    <i class="fa fa-send mr-1"></i>调度
+                                </button>
+                            </div>
+                            
+                            <!-- 医疗资源 -->
+                            <div class="bg-emergency-primary rounded-lg p-3 hover:bg-emergency-primary/80 transition cursor-pointer resource-card">
+                                <div class="flex justify-between items-center mb-2">
+                                    <h4 class="font-bold text-white text-sm">医疗救护</h4>
+                                    <i class="fa fa-ambulance text-emergency-info"></i>
+                                </div>
+                                <div class="text-xs text-gray-400 mb-2">
+                                    <p>可用：<span class="text-white">8</span> 辆救护车</p>
+                                    <p>已调度：<span class="text-emergency-warning">4</span> 辆救护车</p>
+                                </div>
+                                <button class="w-full bg-emergency-info/20 text-emergency-info text-xs py-1 rounded hover:bg-emergency-info/30 transition">
+                                    <i class="fa fa-send mr-1"></i>调度
+                                </button>
+                            </div>
+                            
+                            <!-- 通信资源 -->
+                            <div class="bg-emergency-primary rounded-lg p-3 hover:bg-emergency-primary/80 transition cursor-pointer resource-card">
+                                <div class="flex justify-between items-center mb-2">
+                                    <h4 class="font-bold text-white text-sm">应急通信</h4>
+                                    <i class="fa fa-wifi text-emergency-accent"></i>
+                                </div>
+                                <div class="text-xs text-gray-400 mb-2">
+                                    <p>可用：<span class="text-white">6</span> 套设备</p>
+                                    <p>已调度：<span class="text-emergency-warning">2</span> 套设备</p>
+                                </div>
+                                <button class="w-full bg-emergency-accent/20 text-emergency-accent text-xs py-1 rounded hover:bg-emergency-accent/30 transition">
+                                    <i class="fa fa-send mr-1"></i>调度
+                                </button>
+                            </div>
+                            
+                            <!-- 物资资源 -->
+                            <div class="bg-emergency-primary rounded-lg p-3 hover:bg-emergency-primary/80 transition cursor-pointer resource-card">
+                                <div class="flex justify-between items-center mb-2">
+                                    <h4 class="font-bold text-white text-sm">保障物资</h4>
+                                    <i class="fa fa-cubes text-emergency-success"></i>
+                                </div>
+                                <div class="text-xs text-gray-400 mb-2">
+                                    <p>可用：<span class="text-white">20</span> 吨物资</p>
+                                    <p>已调度：<span class="text-emergency-warning">5</span> 吨物资</p>
+                                </div>
+                                <button class="w-full bg-emergency-success/20 text-emergency-success text-xs py-1 rounded hover:bg-emergency-success/30 transition">
+                                    <i class="fa fa-send mr-1"></i>调度
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4">
+                            <button id="view-all-resource-btn" class="w-full bg-gray-700 text-white text-sm py-2 rounded hover:bg-gray-600 transition flex items-center justify-center">
+                                <i class="fa fa-list mr-2"></i>查看全部资源调度情况
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 右侧：指挥调度与态势展示 -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- 指挥指令面板 -->
+                <div class="bg-emergency-secondary rounded-lg panel-shadow overflow-hidden">
+                    <div class="bg-emergency-danger/20 px-4 py-3 border-b border-emergency-danger/30 flex justify-between items-center">
+                        <h2 class="font-bold text-white flex items-center">
+                            <i class="fa fa-bullhorn mr-2"></i>指挥指令发布
+                        </h2>
+                        <button id="add-command-btn" class="bg-emergency-danger text-white px-3 py-1 rounded-md text-sm hover:bg-emergency-danger/90 transition btn-hover">
+                            <i class="fa fa-plus mr-1"></i>发布指令
+                        </button>
+                    </div>
+                    <div class="p-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="bg-emergency-primary rounded-lg p-3 border-l-4 border-emergency-danger">
+                                <div class="flex justify-between items-start mb-2">
+                                    <h4 class="font-bold text-white text-sm">紧急指令 [001]</h4>
+                                    <span class="text-xs bg-emergency-danger/20 text-emergency-danger px-1 py-0 rounded">特急</span>
+                                </div>
+                                <p class="text-xs text-gray-400 mb-2">接收单位：消防支队、公安局</p>
+                                <p class="text-xs text-gray-300 mb-3 line-clamp-2">立即组织力量前往XX商业综合体火灾现场，优先抢救被困人员，控制火势蔓延...</p>
+                                <div class="flex justify-between items-center text-xs">
+                                    <span class="text-gray-500">发布时间：14:15</span>
+                                    <button class="bg-emergency-success/20 text-emergency-success px-2 py-1 rounded hover:bg-emergency-success/30 transition">
+                                        <i class="fa fa-check mr-1"></i>确认执行
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-emergency-primary rounded-lg p-3 border-l-4 border-emergency-warning">
+                                <div class="flex justify-between items-start mb-2">
+                                    <h4 class="font-bold text-white text-sm">调度指令 [002]</h4>
+                                    <span class="text-xs bg-emergency-warning/20 text-emergency-warning px-1 py-0 rounded">紧急</span>
+                                </div>
+                                <p class="text-xs text-gray-400 mb-2">接收单位：卫健委、交通局</p>
+                                <p class="text-xs text-gray-300 mb-3 line-clamp-2">做好伤员救治准备，实施交通管制，保障救援通道畅通...</p>
+                                <div class="flex justify-between items-center text-xs">
+                                    <span class="text-gray-500">发布时间：14:20</span>
+                                    <button class="bg-gray-600 text-white px-2 py-1 rounded hover:bg-gray-500 transition">
+                                        <i class="fa fa-clock-o mr-1"></i>执行中
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-emergency-primary rounded-lg p-3 border-l-4 border-emergency-info">
+                                <div class="flex justify-between items-start mb-2">
+                                    <h4 class="font-bold text-white text-sm">通知指令 [003]</h4>
+                                    <span class="text-xs bg-emergency-info/20 text-emergency-info px-1 py-0 rounded">一般</span>
+                                </div>
+                                <p class="text-xs text-gray-400 mb-2">接收单位：各相关单位</p>
+                                <p class="text-xs text-gray-300 mb-3 line-clamp-2">每15分钟上报一次现场情况，保持通信畅通...</p>
+                                <div class="flex justify-between items-center text-xs">
+                                    <span class="text-gray-500">发布时间：14:25</span>
+                                    <button class="bg-emergency-success/20 text-emergency-success px-2 py-1 rounded hover:bg-emergency-success/30 transition">
+                                        <i class="fa fa-check mr-1"></i>已执行
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-emergency-primary rounded-lg p-3 border-l-4 border-emergency-success">
+                                <div class="flex justify-between items-start mb-2">
+                                    <h4 class="font-bold text-white text-sm">协调指令 [004]</h4>
+                                    <span class="text-xs bg-emergency-success/20 text-emergency-success px-1 py-0 rounded">已完成</span>
+                                </div>
+                                <p class="text-xs text-gray-400 mb-2">接收单位：区政府、应急局</p>
+                                <p class="text-xs text-gray-300 mb-3 line-clamp-2">做好群众疏散和安置工作，保障基本生活需求...</p>
+                                <div class="flex justify-between items-center text-xs">
+                                    <span class="text-gray-500">发布时间：14:00</span>
+                                    <button class="bg-gray-700 text-white px-2 py-1 rounded cursor-not-allowed">
+                                        <i class="fa fa-check-circle mr-1"></i>已完成
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 态势展示面板 -->
+                <div class="bg-emergency-secondary rounded-lg panel-shadow overflow-hidden">
+                    <div class="bg-emergency-info/20 px-4 py-3 border-b border-emergency-info/30 flex justify-between items-center">
+                        <h2 class="font-bold text-white flex items-center">
+                            <i class="fa fa-map-o mr-2"></i>现场态势展示
+                        </h2>
+                        <button id="refresh-situation-btn" class="bg-emergency-info text-white px-3 py-1 rounded-md text-sm hover:bg-emergency-info/90 transition btn-hover">
+                            <i class="fa fa-refresh mr-1"></i>刷新数据
+                        </button>
+                    </div>
+                    <div class="p-4">
+                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                            <!-- 地图区域 -->
+                            <div class="lg:col-span-2 bg-emergency-primary rounded-lg p-3 map-grid h-[300px] relative overflow-hidden">
+                                <!-- 模拟地图 -->
+                                <div class="absolute top-1/4 left-1/3 w-4 h-4 bg-emergency-danger rounded-full status-blink cursor-pointer" title="火灾事故现场" id="map-marker-1">
+                                    <div class="absolute -top-8 -left-20 bg-emergency-danger/90 text-white text-xs px-2 py-1 rounded whitespace-nowrap">
+                                        XX商业综合体火灾 <i class="fa fa-fire ml-1"></i>
+                                    </div>
+                                </div>
+                                
+                                <div class="absolute top-1/2 left-2/3 w-4 h-4 bg-emergency-warning rounded-full cursor-pointer" title="交通事故现场" id="map-marker-2">
+                                    <div class="absolute -top-8 -left-20 bg-emergency-warning/90 text-white text-xs px-2 py-1 rounded whitespace-nowrap">
+                                        XX高速交通事故 <i class="fa fa-car ml-1"></i>
+                                    </div>
+                                </div>
+                                
+                                <div class="absolute bottom-1/4 left-1/2 w-4 h-4 bg-emergency-info rounded-full cursor-pointer" title="燃气泄漏现场" id="map-marker-3">
+                                    <div class="absolute -top-8 -left-20 bg-emergency-info/90 text-white text-xs px-2 py-1 rounded whitespace-nowrap">
+                                        XX小区燃气泄漏 <i class="fa fa-exclamation-triangle ml-1"></i>
+                                    </div>
+                                    
+                                </div>
+                                
+                                <!-- 图例 -->
+                                <div class="absolute bottom-2 right-2 bg-emergency-secondary/90 text-xs p-2 rounded">
+                                    <div class="flex items-center mb-1">
+                                        <div class="w-3 h-3 bg-emergency-danger rounded-full mr-2"></div>
+                                        <span>重大事件</span>
+                                    </div>
+                                    <div class="flex items-center mb-1">
+                                        <div class="w-3 h-3 bg-emergency-warning rounded-full mr-2"></div>
+                                        <span>较大事件</span>
+                                    </div>
+                                    <div class="flex items-center">
+                                        <div class="w-3 h-3 bg-emergency-info rounded-full mr-2"></div>
+                                        <span>一般事件</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- 数据统计 -->
+                            <div class="bg-emergency-primary rounded-lg p-3">
+                                <h4 class="font-bold text-white text-sm mb-3">事件类型统计</h4>
+                                <div class="h-[250px]">
+                                    <canvas id="event-type-chart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 实时数据监控 -->
+                        <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+                            <div class="bg-emergency-primary rounded-lg p-3 border-l-4 border-emergency-danger">
+                                <p class="text-xs text-gray-400">现场人员</p>
+                                <div class="flex items-end space-x-2 mt-1">
+                                    <span class="text-2xl font-bold text-white">28</span>
+                                    <span class="text-xs text-gray-400 mb-1">被困/受伤</span>
+                                </div>
+                                <div class="flex items-end space-x-2 mt-1">
+                                    <span class="text-lg font-bold text-white">120</span>
+                                    <span class="text-xs text-gray-400 mb-1">救援人员</span>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-emergency-primary rounded-lg p-3 border-l-4 border-emergency-warning">
+                                <p class="text-xs text-gray-400">救援设备</p>
+                                <div class="flex items-end space-x-2 mt-1">
+                                    <span class="text-2xl font-bold text-white">18</span>
+                                    <span class="text-xs text-gray-400 mb-1">车辆</span>
+                                </div>
+                                <div class="flex items-end space-x-2 mt-1">
+                                    <span class="text-lg font-bold text-white">36</span>
+                                    <span class="text-xs text-gray-400 mb-1">套/件设备</span>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-emergency-primary rounded-lg p-3 border-l-4 border-emergency-success">
+                                <p class="text-xs text-gray-400">处置进展</p>
+                                <div class="flex items-end space-x-2 mt-1">
+                                    <span class="text-2xl font-bold text-white">8</span>
+                                    <span class="text-xs text-gray-400 mb-1">人已获救</span>
+                                </div>
+                                <div class="flex items-end space-x-2 mt-1">
+                                    <span class="text-lg font-bold text-white">60%</span>
+                                    <span class="text-xs text-gray-400 mb-1">火势控制</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="bg-emergency-secondary border-t border-emergency-accent/30 py-3 mt-8">
+        <div class="container mx-auto px-4 text-center text-xs text-gray-500">
+            <p>© 2024 应急指挥调度系统 - 应急管理部监制 | 系统版本：V2.0 | 数据刷新时间：2024-06-15 14:30:25</p>
+        </div>
+    </footer>
+
+    <!-- JavaScript 交互逻辑 -->
+    <script>
+        // 1. 更新当前时间
+        function updateCurrentTime() {
+            const now = new Date();
+            const timeStr = now.toLocaleString('zh-CN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            }).replace(/\//g, '-');
+            document.getElementById('current-time').textContent = timeStr;
+        }
+        
+        setInterval(updateCurrentTime, 1000);
+        updateCurrentTime();
+
+        // 2. 初始化事件类型统计图表
+        function initEventTypeChart() {
+            const ctx = document.getElementById('event-type-chart').getContext('2d');
+            
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['火灾事故', '交通事故', '燃气泄漏', '其他事件'],
+                    datasets: [{
+                        data: [45, 30, 15, 10],
+                        backgroundColor: [
+                            '#ef4444', // 红色-火灾
+                            '#f59e0b', // 黄色-交通
+                            '#3b82f6', // 蓝色-燃气
+                            '#64748b'  // 灰色-其他
+                        ],
+                        borderWidth: 1,
+                        borderColor: '#1e293b'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                color: '#e2e8f0',
+                                font: {
+                                    size: 10
+                                },
+                                padding: 10
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.label}: ${context.raw}%`;
+                                }
+                            }
+                        },
+                        onClick: function(e, elements) {
+                            if (elements.length > 0) {
+                                const index = elements[0].index;
+                                const labels = ['火灾事故', '交通事故', '燃气泄漏', '其他事件'];
+                                const values = [45, 30, 15, 10];
+                                alert(`${labels[index]}占比：${values[index]}%\n\n近期该类型事件高发，建议加强防范措施。`);
+                            }
+                        }
+                    },
+                    cutout: '60%'
+                }
+            });
+        }
+
+        // 3. 初始化弹窗交互
+        function initModals() {
+            // 操作指南弹窗
+            const helpBtn = document.getElementById('help-btn');
+            const helpModal = document.getElementById('help-modal');
+            const closeHelpBtn = document.getElementById('close-help');
+            const confirmHelpBtn = document.getElementById('confirm-help');
+            
+            helpBtn.addEventListener('click', () => {
+                helpModal.classList.remove('hidden');
+                document.body.style.overflow = 'hidden';
+            });
+            
+            function closeHelpModal() {
+                helpModal.classList.add('hidden');
+                document.body.style.overflow = '';
+            }
+            
+            closeHelpBtn.addEventListener('click', closeHelpModal);
+            confirmHelpBtn.addEventListener('click', closeHelpModal);
+
+            // 事件详情弹窗
+            const eventItems = document.querySelectorAll('.event-item');
+            const eventModal = document.getElementById('event-modal');
+            const closeEventBtn = document.getElementById('close-event');
+            const closeEventModalBtn = document.getElementById('close-event-btn');
+            const dispatchResourceBtn = document.getElementById('dispatch-resource-btn');
+            const resourceModal = document.getElementById('resource-modal');
+            
+            eventItems.forEach(item => {
+                item.addEventListener('click', () => {
+                    const eventData = JSON.parse(item.dataset.event);
+                    const modalTitle = document.getElementById('event-modal-title');
+                    const modalContent = document.getElementById('event-modal-content');
+                    
+                    modalTitle.textContent = `${eventData.level}${eventData.type} - 详情`;
+                    modalContent.innerHTML = `
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <p><span class="text-white font-medium">事件编号：</span>${eventData.id}</p>
+                                <p><span class="text-white font-medium">事件类型：</span>${eventData.type}</p>
+                                <p><span class="text-white font-medium">事件等级：</span>
+                                    <span class="inline-block px-2 py-0.5 rounded text-xs ${
+                                        eventData.level === '重大' ? 'bg-emergency-danger/20 text-emergency-danger' :
+                                        eventData.level === '较大' ? 'bg-emergency-warning/20 text-emergency-warning' :
+                                        'bg-emergency-info/20 text-emergency-info'
+                                    }">${eventData.level}</span>
+                                </p>
+                                <p><span class="text-white font-medium">发生地点：</span>${eventData.location}</p>
+                                <p><span class="text-white font-medium">接报时间：</span>${eventData.time}</p>
+                                <p><span class="text-white font-medium">当前状态：</span>
+                                    <span class="inline-block px-2 py-0.5 rounded text-xs bg-emergency-warning/20 text-emergency-warning">${eventData.status}</span>
+                                </p>
+                            </div>
+                            <div class="md:col-span-2 mt-2">
+                                <p><span class="text-white font-medium block mb-1">事件描述：</span></p>
+                                <p class="bg-emergency-primary/50 p-2 rounded text-sm">${eventData.desc}</p>
+                            </div>
+                            <div class="md:col-span-2 mt-2">
+                                <p><span class="text-white font-medium block mb-1">处置进度：</span></p>
+                                <div class="w-full bg-gray-700 rounded-full h-2">
+                                    <div class="h-2 rounded-full ${
+                                        eventData.level === '重大' ? 'bg-emergency-danger' :
+                                        eventData.level === '较大' ? 'bg-emergency-warning' :
+                                        'bg-emergency-info'
+                                    }" style="width: ${eventData.progress}"></div>
+                                </div>
+                                <p class="text-xs text-gray-400 mt-1">当前进度：${eventData.progress} | 预计完成时间：2024-06-15 18:00</p>
+                            </div>
+                        </div>
+                    `;
+                    
+                    eventModal.classList.remove('hidden');
+                    document.body.style.overflow = 'hidden';
+                });
+            });
+            
+            function closeEventModal() {
+                eventModal.classList.add('hidden');
+                document.body.style.overflow = '';
+            }
+            
+            closeEventBtn.addEventListener('click', closeEventModal);
+            closeEventModalBtn.addEventListener('click', closeEventModal);
+            
+            // 从事件详情弹窗调度资源
+            dispatchResourceBtn.addEventListener('click', () => {
+                closeEventModal();
+                resourceModal.classList.remove('hidden');
+            });
+
+            // 资源调度弹窗
+            const resourceCards = document.querySelectorAll('.resource-card');
+            const viewAllResourceBtn = document.getElementById('view-all-resource-btn');
+            const closeResourceBtn = document.getElementById('close-resource');
+            const cancelResourceBtn = document.getElementById('cancel-resource-btn');
+            const confirmResourceBtn = document.getElementById('confirm-resource-btn');
+            
+            resourceCards.forEach(card => {
+                card.addEventListener('click', (e) => {
+                    // 阻止按钮点击事件冒泡
+                    if (e.target.tagName === 'BUTTON') return;
+                    
+                    const resourceType = card.querySelector('h4').textContent;
+                    alert(`查看${resourceType}详细信息：\n\n可用资源：${card.querySelector('.text-white').textContent}\n已调度资源：${card.querySelector('.text-emergency-warning').textContent}\n\n最近调度记录：2024-06-15 14:15 调度3支消防救援队伍前往火灾现场`);
+                });
+            });
+            
+            viewAllResourceBtn.addEventListener('click', () => {
+                resourceModal.classList.remove('hidden');
+                document.body.style.overflow = 'hidden';
+            });
+            
+            function closeResourceModal() {
+                resourceModal.classList.add('hidden');
+                document.body.style.overflow = '';
+            }
+            
+            closeResourceBtn.addEventListener('click', closeResourceModal);
+            cancelResourceBtn.addEventListener('click', closeResourceModal);
+            
+            confirmResourceBtn.addEventListener('click', () => {
+                closeResourceModal();
+                alert('✅ 资源调度指令已成功发布！\n\n调度信息已发送至相关单位，预计30分钟内可到达指定地点。');
+                
+                // 模拟更新资源状态
+                updateResourceStatus();
+            });
+
+            // 指挥指令弹窗
+            const addCommandBtn = document.getElementById('add-command-btn');
+            const commandModal = document.getElementById('command-modal');
+            const closeCommandBtn = document.getElementById('close-command');
+            const cancelCommandBtn = document.getElementById('cancel-command-btn');
+            const confirmCommandBtn = document.getElementById('confirm-command-btn');
+            
+            addCommandBtn.addEventListener('click', () => {
+                commandModal.classList.remove('hidden');
+                document.body.style.overflow = 'hidden';
+            });
+            
+            function closeCommandModal() {
+                commandModal.classList.add('hidden');
+                document.body.style.overflow = '';
+            }
+            
+            closeCommandBtn.addEventListener('click', closeCommandModal);
+            cancelCommandBtn.addEventListener('click', closeCommandModal);
+            
+            confirmCommandBtn.addEventListener('click', () => {
+                closeCommandModal();
+                alert('📢 指挥指令已成功发布！\n\n指令已发送至所有接收单位，系统将实时跟踪指令执行情况。');
+            });
+
+            // 地图标记点击事件
+            const mapMarkers = [
+                document.getElementById('map-marker-1'),
+                document.getElementById('map-marker-2'),
+                document.getElementById('map-marker-3')
+            ];
+            
+            const markerInfos = [
+                '🔥 火灾事故现场详情：\n• 地点：XX商业综合体4楼\n• 过火面积：约500㎡\n• 被困人员：约15人\n• 救援进展：已救出8人，火势得到初步控制\n• 现场指挥：市消防救援支队支队长',
+                '🚗 交通事故现场详情：\n• 地点：XX高速K125处\n• 事故类型：多车连环相撞\n• 受伤人员：6人\n• 救援进展：伤员已送医，交通正在恢复\n• 现场指挥：市交警支队支队长',
+                '⚠️ 燃气泄漏现场详情：\n• 地点：XX小区15号楼\n• 泄漏原因：管道老化\n• 影响范围：约20户居民\n• 处置进展：已疏散居民，专业人员正在抢修\n• 现场指挥：区应急管理局局长'
+            ];
+            
+            mapMarkers.forEach((marker, index) => {
+                marker.addEventListener('click', () => {
+                    alert(markerInfos[index]);
+                });
+            });
+
+            // 新增事件按钮
+            document.getElementById('add-event-btn').addEventListener('click', () => {
+                alert('📝 新增应急事件\n\n请填写事件信息：\n1. 事件类型\n2. 发生地点\n3. 事件等级\n4. 简要描述\n5. 联系人及电话');
+            });
+
+            // 刷新态势数据按钮
+            document.getElementById('refresh-situation-btn').addEventListener('click', () => {
+                alert('🔄 正在刷新态势数据...\n\n最新数据：\n• 火灾现场：已救出10人，火势控制70%\n• 救援人员：新增30人支援\n• 物资供应：首批保障物资已到位');
+                
+                // 更新时间戳
+                updateCurrentTime();
+            });
+        }
+
+        // 3. 更新资源状态（模拟）
+        function updateResourceStatus() {
+            const resourceCards = document.querySelectorAll('.resource-card');
+            resourceCards.forEach(card => {
+                const availableEl = card.querySelector('.text-white');
+                const dispatchedEl = card.querySelector('.text-emergency-warning');
+                
+                if (availableEl && dispatchedEl) {
+                    const available = parseInt(availableEl.textContent);
+                    const dispatched = parseInt(dispatchedEl.textContent);
+                    
+                    if (available > 0) {
+                        availableEl.textContent = (available - 1).toString();
+                        dispatchedEl.textContent = (dispatched + 1).toString();
+                    }
+                }
+            });
+        }
+
+        // 4. 点击弹窗背景关闭弹窗
+        window.addEventListener('click', (e) => {
+            if (e.target.classList.contains('bg-black/70')) {
+                document.querySelectorAll('.bg-black/70').forEach(modal => {
+                    modal.classList.add('hidden');
+                });
+                document.body.style.overflow = '';
+            }
+        });
+
+        // 页面加载完成后初始化
+        window.addEventListener('DOMContentLoaded', () => {
+            initEventTypeChart();
+            initModals();
+            
+            // 页面加载时自动显示帮助弹窗（首次访问）
+            if (!localStorage.getItem('emergency-help-shown')) {
+                setTimeout(() => {
+                    document.getElementById('help-modal').classList.remove('hidden');
+                    document.body.style.overflow = 'hidden';
+                    localStorage.setItem('emergency-help-shown', 'true');
+                }, 1000);
+            }
+        });
+    </script>
+</body>
+</html>
