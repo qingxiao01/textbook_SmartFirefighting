@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>火灾等级分类系统</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+    
+    <!-- 配置Tailwind自定义样式 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        fire: {
+                            // 火灾等级配色：一般(蓝)、较大(黄)、重大(橙)、特别重大(红)
+                            general: '#0077b6',
+                            larger: '#f9c74f',
+                            major: '#f8961e',
+                            severe: '#e63946'
+                        },
+                        secondary: '#1d3557',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .card-shadow {
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            }
+            .level-card-hover {
+                transition: all 0.3s ease;
+                cursor: pointer;
+            }
+            .level-card-hover:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+            }
+            .modal-backdrop {
+                backdrop-filter: blur(4px);
+            }
+            .table-row-hover {
+                transition: background-color 0.2s ease;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans text-gray-800">
+    <!-- 顶部导航栏 -->
+    <header class="bg-fire-severe text-white shadow-md fixed w-full top-0 z-50">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-3 cursor-pointer" id="header-title">
+                <i class="fa fa-fire text-2xl"></i>
+                <h1 class="text-xl md:text-2xl font-bold">火灾等级分类系统</h1>
+            </div>
+            <div class="flex items-center space-x-4">
+                <button id="back-to-top" class="bg-white text-fire-severe px-3 py-1 rounded-md hover:bg-gray-100 transition hidden">
+                    <i class="fa fa-arrow-up mr-1"></i>返回顶部
+                </button>
+                <button id="help-btn" class="bg-white/20 hover:bg-white/30 px-3 py-1 rounded-md transition">
+                    <i class="fa fa-question-circle mr-1"></i>使用帮助
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- 帮助弹窗 -->
+    <div id="help-modal" class="fixed inset-0 flex items-center justify-center z-50 hidden modal-backdrop">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-lg mx-4 p-6 transform transition-all">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-secondary">使用帮助</h3>
+                <button id="close-help" class="text-gray-500 hover:text-gray-700 text-xl">
+                    <i class="fa fa-times"></i>
+                </button>
+            </div>
+            <div class="text-gray-700 space-y-3">
+                <p><i class="fa fa-hand-pointer-o text-fire-severe mr-2"></i>点击火灾等级卡片可查看详细信息</p>
+                <p><i class="fa fa-hand-pointer-o text-fire-severe mr-2"></i>点击案例表格行可查看案例详情</p>
+                <p><i class="fa fa-hand-pointer-o text-fire-severe mr-2"></i>鼠标悬停在图表上可查看数据详情</p>
+                <p><i class="fa fa-hand-pointer-o text-fire-severe mr-2"></i>滚动页面后点击"返回顶部"可快速回到页面开头</p>
+            </div>
+            <div class="mt-6 text-right">
+                <button id="confirm-help" class="bg-fire-severe text-white px-4 py-2 rounded-md hover:bg-fire-severe/90 transition">
+                    我知道了
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 等级详情弹窗 -->
+    <div id="level-modal" class="fixed inset-0 flex items-center justify-center z-50 hidden modal-backdrop">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl mx-4 p-6 transform transition-all">
+            <div class="flex justify-between items-center mb-4">
+                <h3 id="modal-title" class="text-xl font-bold text-secondary">火灾等级详情</h3>
+                <button id="close-modal" class="text-gray-500 hover:text-gray-700 text-xl">
+                    <i class="fa fa-times"></i>
+                </button>
+            </div>
+            <div id="modal-content" class="text-gray-700 space-y-4">
+                <!-- 动态填充内容 -->
+            </div>
+            <div class="mt-6 text-right">
+                <button id="close-modal-btn" class="bg-fire-severe text-white px-4 py-2 rounded-md hover:bg-fire-severe/90 transition">
+                    关闭
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 案例详情弹窗 -->
+    <div id="case-modal" class="fixed inset-0 flex items-center justify-center z-50 hidden modal-backdrop">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl mx-4 p-6 transform transition-all">
+            <div class="flex justify-between items-center mb-4">
+                <h3 id="case-modal-title" class="text-xl font-bold text-secondary">案例详情</h3>
+                <button id="close-case-modal" class="text-gray-500 hover:text-gray-700 text-xl">
+                    <i class="fa fa-times"></i>
+                </button>
+            </div>
+            <div id="case-modal-content" class="text-gray-700 space-y-4">
+                <!-- 动态填充内容 -->
+            </div>
+            <div class="mt-6 text-right">
+                <button id="close-case-modal-btn" class="bg-fire-severe text-white px-4 py-2 rounded-md hover:bg-fire-severe/90 transition">
+                    关闭
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 主要内容区域 -->
+    <main class="container mx-auto px-4 pt-24 pb-10">
+        <!-- 介绍区域 -->
+        <div class="bg-white rounded-lg p-6 card-shadow mb-8">
+            <h2 class="text-2xl font-bold mb-4 text-secondary">火灾等级分类标准</h2>
+            <p class="text-gray-700 mb-4">
+                根据《生产安全事故报告和调查处理条例》（国务院令第493号），火灾事故分为特别重大火灾、重大火灾、较大火灾和一般火灾四个等级，
+                分类主要依据事故造成的人员伤亡、直接经济损失等指标进行判定。
+            </p>
+            <div class="flex flex-wrap gap-4 mt-6">
+                <div class="flex-1 min-w-[280px] bg-blue-50 rounded-lg p-4 border-l-4 border-fire-general hover:bg-blue-100 transition cursor-pointer" id="criteria-card">
+                    <h3 class="font-bold text-fire-general mb-2"><i class="fa fa-info-circle mr-2"></i>判定依据</h3>
+                    <ul class="list-disc list-inside text-gray-700 space-y-1 pl-2">
+                        <li>造成人员死亡、重伤的数量</li>
+                        <li>直接财产损失金额</li>
+                        <li>受灾范围和影响程度</li>
+                    </ul>
+                </div>
+                <div class="flex-1 min-w-[280px] bg-orange-50 rounded-lg p-4 border-l-4 border-fire-major hover:bg-orange-100 transition cursor-pointer" id="principle-card">
+                    <h3 class="font-bold text-fire-major mb-2"><i class="fa fa-exclamation-triangle mr-2"></i>处置原则</h3>
+                    <ul class="list-disc list-inside text-gray-700 space-y-1 pl-2">
+                        <li>分级响应，逐级上报</li>
+                        <li>先救人后救物，先控制后消灭</li>
+                        <li>属地为主，协同配合</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- 等级分类卡片 -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <!-- 一般火灾 -->
+            <div class="bg-white rounded-lg overflow-hidden card-shadow level-card-hover border-t-4 border-fire-general" data-level="general" data-name="一般火灾" data-grade="Ⅳ级">
+                <div class="bg-fire-general/10 p-4">
+                    <h3 class="text-lg font-bold text-fire-general flex items-center">
+                        <i class="fa fa-fire mr-2"></i>一般火灾
+                        <span class="ml-2 text-sm bg-fire-general text-white px-2 py-0.5 rounded-full">Ⅳ级</span>
+                    </h3>
+                </div>
+                <div class="p-4">
+                    <div class="mb-3">
+                        <span class="text-sm text-gray-500">判定标准：</span>
+                        <ul class="list-disc list-inside text-gray-700 mt-1 space-y-1 text-sm">
+                            <li>造成3人以下死亡</li>
+                            <li>10人以下重伤</li>
+                            <li>1000万元以下直接财产损失</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <span class="text-sm text-gray-500">处置措施：</span>
+                        <p class="mt-1 text-sm text-gray-700">
+                            由县级人民政府消防救援机构负责处置，及时上报市级消防救援机构备案。
+                        </p>
+                    </div>
+                </div>
+                <div class="bg-gray-50 p-3 text-right">
+                    <button class="text-fire-general hover:text-fire-general/80 text-sm font-medium level-detail-btn">
+                        <i class="fa fa-book mr-1"></i>查看详情
+                    </button>
+                </div>
+            </div>
+
+            <!-- 较大火灾 -->
+            <div class="bg-white rounded-lg overflow-hidden card-shadow level-card-hover border-t-4 border-fire-larger" data-level="larger" data-name="较大火灾" data-grade="Ⅲ级">
+                <div class="bg-fire-larger/10 p-4">
+                    <h3 class="text-lg font-bold text-fire-larger flex items-center">
+                        <i class="fa fa-fire mr-2"></i>较大火灾
+                        <span class="ml-2 text-sm bg-fire-larger text-white px-2 py-0.5 rounded-full">Ⅲ级</span>
+                    </h3>
+                </div>
+                <div class="p-4">
+                    <div class="mb-3">
+                        <span class="text-sm text-gray-500">判定标准：</span>
+                        <ul class="list-disc list-inside text-gray-700 mt-1 space-y-1 text-sm">
+                            <li>造成3人以上、10人以下死亡</li>
+                            <li>10人以上、50人以下重伤</li>
+                            <li>1000万元以上、5000万元以下直接财产损失</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <span class="text-sm text-gray-500">处置措施：</span>
+                        <p class="mt-1 text-sm text-gray-700">
+                            由市级人民政府消防救援机构统一指挥，省级消防救援机构指导处置。
+                        </p>
+                    </div>
+                </div>
+                <div class="bg-gray-50 p-3 text-right">
+                    <button class="text-fire-larger hover:text-fire-larger/80 text-sm font-medium level-detail-btn">
+                        <i class="fa fa-book mr-1"></i>查看详情
+                    </button>
+                </div>
+            </div>
+
+            <!-- 重大火灾 -->
+            <div class="bg-white rounded-lg overflow-hidden card-shadow level-card-hover border-t-4 border-fire-major" data-level="major" data-name="重大火灾" data-grade="Ⅱ级">
+                <div class="bg-fire-major/10 p-4">
+                    <h3 class="text-lg font-bold text-fire-major flex items-center">
+                        <i class="fa fa-fire mr-2"></i>重大火灾
+                        <span class="ml-2 text-sm bg-fire-major text-white px-2 py-0.5 rounded-full">Ⅱ级</span>
+                    </h3>
+                </div>
+                <div class="p-4">
+                    <div class="mb-3">
+                        <span class="text-sm text-gray-500">判定标准：</span>
+                        <ul class="list-disc list-inside text-gray-700 mt-1 space-y-1 text-sm">
+                            <li>造成10人以上、30人以下死亡</li>
+                            <li>50人以上、100人以下重伤</li>
+                            <li>5000万元以上、1亿元以下直接财产损失</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <span class="text-sm text-gray-500">处置措施：</span>
+                        <p class="mt-1 text-sm text-gray-700">
+                            省级人民政府消防救援机构统一指挥，调集全省救援力量支援处置。
+                        </p>
+                    </div>
+                </div>
+                <div class="bg-gray-50 p-3 text-right">
+                    <button class="text-fire-major hover:text-fire-major/80 text-sm font-medium level-detail-btn">
+                        <i class="fa fa-book mr-1"></i>查看详情
+                    </button>
+                </div>
+            </div>
+
+            <!-- 特别重大火灾 -->
+            <div class="bg-white rounded-lg overflow-hidden card-shadow level-card-hover border-t-4 border-fire-severe" data-level="severe" data-name="特别重大火灾" data-grade="Ⅰ级">
+                <div class="bg-fire-severe/10 p-4">
+                    <h3 class="text-lg font-bold text-fire-severe flex items-center">
+                        <i class="fa fa-fire mr-2"></i>特别重大火灾
+                        <span class="ml-2 text-sm bg-fire-severe text-white px-2 py-0.5 rounded-full">Ⅰ级</span>
+                    </h3>
+                </div>
+                <div class="p-4">
+                    <div class="mb-3">
+                        <span class="text-sm text-gray-500">判定标准：</span>
+                        <ul class="list-disc list-inside text-gray-700 mt-1 space-y-1 text-sm">
+                            <li>造成30人以上死亡</li>
+                            <li>100人以上重伤</li>
+                            <li>1亿元以上直接财产损失</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <span class="text-sm text-gray-500">处置措施：</span>
+                        <p class="mt-1 text-sm text-gray-700">
+                            国家级应急指挥机构统一调度，调集全国消防救援力量参与处置。
+                        </p>
+                    </div>
+                </div>
+                <div class="bg-gray-50 p-3 text-right">
+                    <button class="text-fire-severe hover:text-fire-severe/80 text-sm font-medium level-detail-btn">
+                        <i class="fa fa-book mr-1"></i>查看详情
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 数据可视化区域 -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <!-- 等级分布图表 -->
+            <div class="bg-white rounded-lg p-6 card-shadow hover:shadow-lg transition">
+                <h3 class="text-lg font-bold mb-4 text-secondary">近五年火灾等级分布</h3>
+                <div class="h-80">
+                    <canvas id="fire-level-chart"></canvas>
+                </div>
+                <div class="mt-4 text-sm text-gray-500 italic text-center">
+                    点击图表区块可查看详细数据占比
+                </div>
+            </div>
+
+            <!-- 损失对比图表 -->
+            <div class="bg-white rounded-lg p-6 card-shadow hover:shadow-lg transition">
+                <h3 class="text-lg font-bold mb-4 text-secondary">不同等级火灾损失对比</h3>
+                <div class="h-80">
+                    <canvas id="loss-comparison-chart"></canvas>
+                </div>
+                <div class="mt-4 text-sm text-gray-500 italic text-center">
+                    点击柱状图可查看具体数值
+                </div>
+            </div>
+        </div>
+
+        <!-- 案例分析 -->
+        <div class="bg-white rounded-lg p-6 card-shadow">
+            <h3 class="text-xl font-bold mb-4 text-secondary">典型火灾等级判定案例</h3>
+            <div class="overflow-x-auto">
+                <table class="min-w-full">
+                    <thead>
+                        <tr class="bg-gray-50 border-b border-gray-200">
+                            <th class="text-left py-3 px-4 text-sm font-medium text-gray-600">案例名称</th>
+                            <th class="text-left py-3 px-4 text-sm font-medium text-gray-600">发生时间</th>
+                            <th class="text-left py-3 px-4 text-sm font-medium text-gray-600">死亡人数</th>
+                            <th class="text-left py-3 px-4 text-sm font-medium text-gray-600">重伤人数</th>
+                            <th class="text-left py-3 px-4 text-sm font-medium text-gray-600">直接损失(万元)</th>
+                            <th class="text-left py-3 px-4 text-sm font-medium text-gray-600">判定等级</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="border-b border-gray-100 hover:bg-gray-50 table-row-hover cursor-pointer" 
+                            data-case='{"name":"XX仓库火灾","time":"2023-04-15","death":2,"injured":8,"loss":850,"level":"一般火灾","analysis":"该仓库因电气线路老化引发火灾，过火面积约200平方米，造成2人死亡、8人重伤，直接经济损失850万元。经消防救援机构认定，该事故属于一般火灾，由县级消防救援大队负责调查处理，相关责任人已被依法追责。"}'>
+                            <td class="py-3 px-4 text-sm">XX仓库火灾</td>
+                            <td class="py-3 px-4 text-sm">2023-04-15</td>
+                            <td class="py-3 px-4 text-sm">2</td>
+                            <td class="py-3 px-4 text-sm">8</td>
+                            <td class="py-3 px-4 text-sm">850</td>
+                            <td class="py-3 px-4 text-sm">
+                                <span class="bg-fire-general/10 text-fire-general px-2 py-1 rounded text-xs">一般火灾</span>
+                            </td>
+                        </tr>
+                        <tr class="border-b border-gray-100 hover:bg-gray-50 table-row-hover cursor-pointer"
+                            data-case='{"name":"XX商场火灾","time":"2022-11-08","death":5,"injured":28,"loss":3200,"level":"较大火灾","analysis":"该商场因违规动火作业引发火灾，发生在周末客流高峰期，造成5人死亡、28人重伤，直接经济损失3200万元。市级消防救援支队启动Ⅲ级响应，调集周边区县救援力量参与处置，事故造成较大社会影响。"}'>
+                            <td class="py-3 px-4 text-sm">XX商场火灾</td>
+                            <td class="py-3 px-4 text-sm">2022-11-08</td>
+                            <td class="py-3 px-4 text-sm">5</td>
+                            <td class="py-3 px-4 text-sm">28</td>
+                            <td class="py-3 px-4 text-sm">3200</td>
+                            <td class="py-3 px-4 text-sm">
+                                <span class="bg-fire-larger/10 text-fire-larger px-2 py-1 rounded text-xs">较大火灾</span>
+                            </td>
+                        </tr>
+                        <tr class="border-b border-gray-100 hover:bg-gray-50 table-row-hover cursor-pointer"
+                            data-case='{"name":"XX工厂火灾","time":"2021-08-22","death":12,"injured":65,"loss":7800,"level":"重大火灾","analysis":"该化工工厂因原料储存不当引发爆炸起火，造成12人死亡、65人重伤，直接经济损失7800万元。省级消防救援总队启动Ⅱ级应急响应，调集全省特种救援力量参与处置，事故涉及有毒有害气体泄漏，救援难度极大。"}'>
+                            <td class="py-3 px-4 text-sm">XX工厂火灾</td>
+                            <td class="py-3 px-4 text-sm">2021-08-22</td>
+                            <td class="py-3 px-4 text-sm">12</td>
+                            <td class="py-3 px-4 text-sm">65</td>
+                            <td class="py-3 px-4 text-sm">7800</td>
+                            <td class="py-3 px-4 text-sm">
+                                <span class="bg-fire-major/10 text-fire-major px-2 py-1 rounded text-xs">重大火灾</span>
+                            </td>
+                        </tr>
+                        <tr class="hover:bg-gray-50 table-row-hover cursor-pointer"
+                            data-case='{"name":"XX高层建筑火灾","time":"2020-06-10","death":35,"injured":120,"loss":15000,"level":"特别重大火灾","analysis":"该超高层建筑因外墙保温材料易燃引发火灾，火势迅速蔓延至多个楼层，造成35人死亡、120人重伤，直接经济损失1.5亿元。国家应急管理部启动Ⅰ级应急响应，调集全国多地消防救援力量支援，事故引起中央高度重视。"}'>
+                            <td class="py-3 px-4 text-sm">XX高层建筑火灾</td>
+                            <td class="py-3 px-4 text-sm">2020-06-10</td>
+                            <td class="py-3 px-4 text-sm">35</td>
+                            <td class="py-3 px-4 text-sm">120</td>
+                            <td class="py-3 px-4 text-sm">15000</td>
+                            <td class="py-3 px-4 text-sm">
+                                <span class="bg-fire-severe/10 text-fire-severe px-2 py-1 rounded text-xs">特别重大火灾</span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="mt-4 text-sm text-gray-500 italic">
+                <i class="fa fa-info-circle mr-1"></i>点击表格行可查看案例详细分析
+            </div>
+        </div>
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="bg-secondary text-white py-4 mt-8">
+        <div class="container mx-auto px-4 text-center text-sm">
+            <p>© 2024 火灾等级分类系统 - 依据《生产安全事故报告和调查处理条例》编制</p>
+        </div>
+    </footer>
+
+    <!-- JavaScript 交互逻辑 -->
+    <script>
+        // 1. 返回顶部按钮
+        window.addEventListener('scroll', function() {
+            const backToTopBtn = document.getElementById('back-to-top');
+            if (window.scrollY > 300) {
+                backToTopBtn.classList.remove('hidden');
+            } else {
+                backToTopBtn.classList.add('hidden');
+            }
+        });
+
+        document.getElementById('back-to-top').addEventListener('click', function() {
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        });
+
+        // 2. 初始化火灾等级分布图表（增强交互）
+        function initFireLevelChart() {
+            const ctx = document.getElementById('fire-level-chart').getContext('2d');
+            
+            const fireChart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: ['一般火灾', '较大火灾', '重大火灾', '特别重大火灾'],
+                    datasets: [{
+                        label: '火灾数量',
+                        data: [856, 128, 36, 8],
+                        backgroundColor: [
+                            '#0077b6', // 一般火灾-蓝
+                            '#f9c74f', // 较大火灾-黄
+                            '#f8961e', // 重大火灾-橙
+                            '#e63946'  // 特别重大火灾-红
+                        ],
+                        borderWidth: 1,
+                        borderColor: '#ffffff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.raw || 0;
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = ((value / total) * 100).toFixed(1);
+                                    return `${label}: ${value} 起 (${percentage}%)`;
+                                }
+                            }
+                        },
+                        // 点击图表区块触发提示
+                        onClick: function(e, elements) {
+                            if (elements.length > 0) {
+                                const index = elements[0].index;
+                                const labels = ['一般火灾', '较大火灾', '重大火灾', '特别重大火灾'];
+                                const data = [856, 128, 36, 8];
+                                const total = data.reduce((a, b) => a + b, 0);
+                                const percentage = ((data[index] / total) * 100).toFixed(1);
+                                
+                                alert(`${labels[index]}：共发生 ${data[index]} 起，占总数的 ${percentage}%`);
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 3. 初始化损失对比图表（增强交互）
+        function initLossComparisonChart() {
+            const ctx = document.getElementById('loss-comparison-chart').getContext('2d');
+            
+            const lossChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['一般火灾', '较大火灾', '重大火灾', '特别重大火灾'],
+                    datasets: [
+                        {
+                            label: '平均直接损失(万元)',
+                            data: [850, 3200, 7800, 15000],
+                            backgroundColor: '#e63946',
+                            borderRadius: 4
+                        },
+                        {
+                            label: '平均伤亡人数',
+                            data: [6, 25, 70, 150],
+                            backgroundColor: '#0077b6',
+                            borderRadius: 4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: '数值'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: '火灾等级'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        // 点击柱状图触发提示
+                        onClick: function(e, elements) {
+                            if (elements.length > 0) {
+                                const index = elements[0].index;
+                                const datasetIndex = elements[0].datasetIndex;
+                                const labels = ['一般火灾', '较大火灾', '重大火灾', '特别重大火灾'];
+                                const datasetLabels = ['平均直接损失(万元)', '平均伤亡人数'];
+                                const dataValues = [
+                                    [850, 3200, 7800, 15000],
+                                    [6, 25, 70, 150]
+                                ];
+                                
+                                alert(`${labels[index]} - ${datasetLabels[datasetIndex]}：${dataValues[datasetIndex][index]}`);
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 4. 等级卡片点击事件（弹窗展示详情）
+        function initLevelCards() {
+            // 等级详情数据
+            const levelDetails = {
+                general: {
+                    name: '一般火灾 (Ⅳ级)',
+                    criteria: [
+                        '造成3人以下死亡',
+                        '10人以下重伤',
+                        '1000万元以下直接财产损失'
+                    ],
+                    disposal: '由县级人民政府消防救援机构负责处置，及时上报市级消防救援机构备案。县级消防救援大队接到报警后，立即调派辖区内消防站力量前往处置，事故调查由县级消防救援机构牵头，必要时可请求市级技术支持。',
+                    characteristics: '一般火灾是最常见的火灾类型，约占火灾总数的85%以上，主要发生在小型场所、居民住宅等区域，处置难度相对较小，通常依靠辖区内常规消防力量即可完成处置。',
+                    precautions: '加强居民消防安全宣传教育，定期开展小型场所消防安全检查，重点整治电气线路老化、违规用火用电等常见隐患。'
+                },
+                larger: {
+                    name: '较大火灾 (Ⅲ级)',
+                    criteria: [
+                        '造成3人以上、10人以下死亡',
+                        '10人以上、50人以下重伤',
+                        '1000万元以上、5000万元以下直接财产损失'
+                    ],
+                    disposal: '由市级人民政府消防救援机构统一指挥，省级消防救援机构指导处置。市级消防救援支队启动Ⅲ级应急响应，调集辖区内多个消防站及特种救援力量参与处置，事故调查由市级消防救援机构牵头。',
+                    characteristics: '较大火灾通常发生在人员密集场所或中型生产企业，需要市级消防救援力量介入，容易造成较大的社会影响，可能涉及跨区县调派救援力量。',
+                    precautions: '重点加强商场、市场、学校、医院等人员密集场所消防安全管理，定期开展联合消防演练，确保应急响应机制畅通。'
+                },
+                major: {
+                    name: '重大火灾 (Ⅱ级)',
+                    criteria: [
+                        '造成10人以上、30人以下死亡',
+                        '50人以上、100人以下重伤',
+                        '5000万元以上、1亿元以下直接财产损失'
+                    ],
+                    disposal: '省级人民政府消防救援机构统一指挥，调集全省救援力量支援处置。省级消防救援总队启动Ⅱ级应急响应，协调跨市救援力量、特种救援装备参与处置，省级政府成立事故调查组。',
+                    characteristics: '重大火灾属于高等级灾害事故，往往涉及大面积燃烧、复杂救援环境，需要跨区域调派救援力量协同处置，可能造成严重的社会影响和经济损失。',
+                    precautions: '强化化工企业、大型综合体、高层建筑等重点单位消防安全管理，建立省级应急救援预案，定期开展跨区域联合演练。'
+                },
+                severe: {
+                    name: '特别重大火灾 (Ⅰ级)',
+                    criteria: [
+                        '造成30人以上死亡',
+                        '100人以上重伤',
+                        '1亿元以上直接财产损失'
+                    ],
+                    disposal: '国家级应急指挥机构统一调度，调集全国消防救援力量参与处置。应急管理部启动Ⅰ级应急响应，协调军队、医疗、交通等多部门联动，国务院成立事故调查组。',
+                    characteristics: '特别重大火灾是最高等级的火灾事故，具有极大的破坏性和社会影响，需要国家级应急响应机制启动，救援难度极大，善后处理工作复杂。',
+                    precautions: '建立国家级重大火灾应急救援预案，加强超高层建筑、大型化工园区等超高风险场所的消防安全监管，配备特种救援装备和专业救援队伍。'
+                }
+            };
+
+            // 点击卡片或详情按钮打开弹窗
+            const levelCards = document.querySelectorAll('.level-card-hover');
+            const detailButtons = document.querySelectorAll('.level-detail-btn');
+            
+            // 卡片点击
+            levelCards.forEach(card => {
+                card.addEventListener('click', function() {
+                    const level = this.dataset.level;
+                    showLevelModal(level, levelDetails[level]);
+                });
+            });
+            
+            // 详情按钮点击（阻止事件冒泡，避免重复触发）
+            detailButtons.forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    const level = this.closest('.level-card-hover').dataset.level;
+                    showLevelModal(level, levelDetails[level]);
+                });
+            });
+
+            // 显示等级详情弹窗
+            function showLevelModal(levelKey, levelData) {
+                const modalTitle = document.getElementById('modal-title');
+                const modalContent = document.getElementById('modal-content');
+                const modal = document.getElementById('level-modal');
+                
+                // 设置标题
+                modalTitle.textContent = levelData.name;
+                
+                // 设置内容
+                modalContent.innerHTML = `
+                    <div class="border-l-4 border-fire-${levelKey} pl-4">
+                        <h4 class="font-bold mb-2">判定标准</h4>
+                        <ul class="list-disc list-inside space-y-1">
+                            ${levelData.criteria.map(item => `<li>${item}</li>`).join('')}
+                        </ul>
+                    </div>
+                    <div class="border-l-4 border-fire-${levelKey} pl-4 mt-4">
+                        <h4 class="font-bold mb-2">处置流程</h4>
+                        <p>${levelData.disposal}</p>
+                    </div>
+                    <div class="border-l-4 border-fire-${levelKey} pl-4 mt-4">
+                        <h4 class="font-bold mb-2">火灾特点</h4>
+                        <p>${levelData.characteristics}</p>
+                    </div>
+                    <div class="border-l-4 border-fire-${levelKey} pl-4 mt-4">
+                        <h4 class="font-bold mb-2">预防措施</h4>
+                        <p>${levelData.precautions}</p>
+                    </div>
+                `;
+                
+                // 显示弹窗
+                modal.classList.remove('hidden');
+                document.body.style.overflow = 'hidden'; // 禁止背景滚动
+            }
+
+            // 关闭等级弹窗
+            document.getElementById('close-modal').addEventListener('click', closeLevelModal);
+            document.getElementById('close-modal-btn').addEventListener('click', closeLevelModal);
+            
+            function closeLevelModal() {
+                document.getElementById('level-modal').classList.add('hidden');
+                document.body.style.overflow = ''; // 恢复背景滚动
+            }
+        }
+
+        // 5. 案例表格行点击事件
+        function initCaseTable() {
+            const caseRows = document.querySelectorAll('.table-row-hover');
+            
+            caseRows.forEach(row => {
+                row.addEventListener('click', function() {
+                    const caseData = JSON.parse(this.dataset.case);
+                    const modalTitle = document.getElementById('case-modal-title');
+                    const modalContent = document.getElementById('case-modal-content');
+                    const modal = document.getElementById('case-modal');
+                    
+                    // 设置标题
+                    modalTitle.textContent = `${caseData.name} - 案例详情`;
+                    
+                    // 设置内容
+                    modalContent.innerHTML = `
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <p><span class="font-bold">案例名称：</span>${caseData.name}</p>
+                                <p><span class="font-bold">发生时间：</span>${caseData.time}</p>
+                                <p><span class="font-bold">死亡人数：</span>${caseData.death} 人</p>
+                                <p><span class="font-bold">重伤人数：</span>${caseData.injured} 人</p>
+                                <p><span class="font-bold">直接损失：</span>${caseData.loss} 万元</p>
+                                <p><span class="font-bold">判定等级：</span>${caseData.level}</p>
+                            </div>
+                            <div class="md:col-span-2 mt-4">
+                                <h4 class="font-bold mb-2">案例分析</h4>
+                                <p class="bg-gray-50 p-3 rounded">${caseData.analysis}</p>
+                            </div>
+                        </div>
+                    `;
+                    
+                    // 显示弹窗
+                    modal.classList.remove('hidden');
+                    document.body.style.overflow = 'hidden';
+                });
+            });
+
+            // 关闭案例弹窗
+            document.getElementById('close-case-modal').addEventListener('click', closeCaseModal);
+            document.getElementById('close-case-modal-btn').addEventListener('click', closeCaseModal);
+            
+            function closeCaseModal() {
+                document.getElementById('case-modal').classList.add('hidden');
+                document.body.style.overflow = '';
+            }
+        }
+
+        // 6. 使用帮助弹窗
+        function initHelpModal() {
+            const helpBtn = document.getElementById('help-btn');
+            const helpModal = document.getElementById('help-modal');
+            const closeHelpBtn = document.getElementById('close-help');
+            const confirmHelpBtn = document.getElementById('confirm-help');
+            
+            helpBtn.addEventListener('click', function() {
+                helpModal.classList.remove('hidden');
+                document.body.style.overflow = 'hidden';
+            });
+            
+            function closeHelpModal() {
+                helpModal.classList.add('hidden');
+                document.body.style.overflow = '';
+            }
+            
+            closeHelpBtn.addEventListener('click', closeHelpModal);
+            confirmHelpBtn.addEventListener('click', closeHelpModal);
+        }
+
+        // 7. 头部标题点击返回顶部
+        document.getElementById('header-title').addEventListener('click', function() {
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        });
+
+        // 8. 判定依据和处置原则卡片点击提示
+        document.getElementById('criteria-card').addEventListener('click', function() {
+            alert('火灾等级判定主要依据三个核心指标：\n1. 人员死亡数量\n2. 人员重伤数量\n3. 直接财产损失金额\n\n三个指标满足任一等级标准即判定为对应等级。');
+        });
+
+        document.getElementById('principle-card').addEventListener('click', function() {
+            alert('火灾处置遵循三大核心原则：\n1. 分级响应，逐级上报 - 不同等级火灾启动不同层级的响应机制\n2. 先救人后救物，先控制后消灭 - 始终将人员生命安全放在首位\n3. 属地为主，协同配合 - 以事发地消防力量为主，跨区域力量协同支援');
+        });
+
+        // 页面加载完成后初始化所有交互
+        window.addEventListener('DOMContentLoaded', function() {
+            initFireLevelChart();
+            initLossComparisonChart();
+            initLevelCards();
+            initCaseTable();
+            initHelpModal();
+            
+            // 页面加载时自动显示帮助弹窗（首次访问提示）
+            setTimeout(() => {
+                if (!localStorage.getItem('fire-help-shown')) {
+                    document.getElementById('help-modal').classList.remove('hidden');
+                    document.body.style.overflow = 'hidden';
+                    localStorage.setItem('fire-help-shown', 'true');
+                }
+            }, 1000);
+        });
+
+        // 点击弹窗背景关闭弹窗
+        window.addEventListener('click', function(e) {
+            if (e.target.classList.contains('modal-backdrop')) {
+                document.querySelectorAll('.modal-backdrop').forEach(modal => {
+                    modal.classList.add('hidden');
+                });
+                document.body.style.overflow = '';
+            }
+        });
+    </script>
+</body>
+</html>
