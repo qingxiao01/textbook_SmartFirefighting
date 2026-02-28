@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>任务3 物联网感知技术 - 智慧消防核心资源库</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Microsoft Yahei", "SimHei", sans-serif;
+        }
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+            line-height: 1.8;
+            padding: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .header {
+            text-align: center;
+            padding: 25px 0;
+            border-bottom: 4px solid #d92121;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            color: #d92121;
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+        }
+        .header p {
+            font-size: 1.1rem;
+            color: #666;
+            font-weight: 500;
+        }
+        .nav {
+            background-color: #fff;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .nav ul {
+            list-style: none;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 15px;
+        }
+        .nav a {
+            color: #333;
+            text-decoration: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            transition: all 0.3s;
+            font-weight: 500;
+        }
+        .nav a:hover {
+            background-color: #d92121;
+            color: #fff;
+        }
+        .section {
+            background-color: #fff;
+            border-radius: 8px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .section h2 {
+            color: #d92121;
+            font-size: 1.8rem;
+            margin-bottom: 25px;
+            padding-left: 15px;
+            border-left: 5px solid #d92121;
+        }
+        .section h3 {
+            font-size: 1.3rem;
+            color: #222;
+            margin: 20px 0 15px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #f5f7fa;
+        }
+        /* 表格样式 */
+        .table-box {
+            overflow-x: auto;
+            margin: 20px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 800px;
+        }
+        th, td {
+            border: 1px solid #eee;
+            padding: 12px 10px;
+            text-align: left;
+            font-size: 0.95rem;
+        }
+        th {
+            background-color: #f8f9fa;
+            color: #d92121;
+            font-weight: 600;
+        }
+        tr:nth-child(even) {
+            background-color: #fafafa;
+        }
+        tr:hover {
+            background-color: #f5f7fa;
+        }
+        /* 流程图/示意图样式 */
+        .chart-box {
+            margin: 25px 0;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #eee;
+        }
+        .chart-title {
+            text-align: center;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #222;
+        }
+        .mermaid {
+            width: 100%;
+            height: auto;
+            min-height: 400px;
+            overflow: auto;
+        }
+        /* 适配移动端 */
+        @media screen and (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            .header h1 {
+                font-size: 1.6rem;
+            }
+            .section {
+                padding: 20px;
+            }
+            .section h2 {
+                font-size: 1.5rem;
+            }
+            .nav ul {
+                gap: 10px;
+            }
+            .nav a {
+                padding: 6px 10px;
+                font-size: 0.9rem;
+            }
+            th, td {
+                padding: 8px 6px;
+                font-size: 0.85rem;
+            }
+            .mermaid {
+                min-height: 300px;
+            }
+        }
+    </style>
+    <!-- 引入Mermaid图表渲染库 -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
+    <script>
+        // 初始化Mermaid
+        mermaid.initialize({
+            theme: 'default',
+            themeVariables: {
+                primaryColor: '#d92121',
+                primaryBorderColor: '#d92121',
+                secondaryColor: '#f5f7fa',
+                tertiaryColor: '#fff',
+                textColor: '#333'
+            },
+            fontSize: 12,
+            flowchart: { curve: 'linear' },
+            htmlLabels: true
+        });
+    </script>
+</head>
+<body>
+    <div class="header">
+        <h1>任务3 物联网感知技术</h1>
+        <p>智慧消防核心资源库 | 选型/部署/数据/参数/合规 一站式查询</p>
+    </div>
+
+    <!-- 导航栏：快速跳转到各模块 -->
+    <div class="nav">
+        <ul>
+            <li><a href="#select-table">智能终端选型速查表</a></li>
+            <li><a href="#deploy-chart">感知节点部署规范图集</a></li>
+            <li><a href="#data-flow">数据处理技术流程图</a></li>
+            <li><a href="#param-compare">关键参数对照表</a></li>
+            <li><a href="#compliance-index">合规标准索引</a></li>
+        </ul>
+    </div>
+
+    <!-- 1. 智能终端选型速查表 -->
+    <div class="section" id="select-table">
+        <h2>一、智能终端选型速查表（表3-1完整版）</h2>
+        <div class="table-box">
+            <table>
+                <tr>
+                    <th>设备类别</th>
+                    <th>应用场景</th>
+                    <th>推荐终端</th>
+                    <th>核心指标/功能</th>
+                    <th>环境适配</th>
+                    <th>合规标准</th>
+                    <th>选型验证方法</th>
+                </tr>
+                <tr>
+                    <td rowspan="3">火灾监测终端</td>
+                    <td>商业综合体/写字楼</td>
+                    <td>AI双光谱热成像终端</td>
+                    <td>火焰识别≥98%、烟雾响应≤1s、视频复核</td>
+                    <td>-</td>
+                    <td>兼容GB55036-2022第12章</td>
+                    <td>技术测试、场景模拟</td>
+                </tr>
+                <tr>
+                    <td>住宅/老旧小区</td>
+                    <td>低功耗无线烟感</td>
+                    <td>待机≥5年、本地声光报警≥85dB、LoRa/NB-IoT</td>
+                    <td>-</td>
+                    <td>CCCF消防产品强制认证</td>
+                    <td>技术测试、场景模拟</td>
+                </tr>
+                <tr>
+                    <td>仓库/厂房</td>
+                    <td>吸气式感烟探测器</td>
+                    <td>采样半径≤5m、高粉尘/高湿环境适应</td>
+                    <td>高温≥85℃、防爆Exd IIBT4 Ga</td>
+                    <td>CCCF消防产品强制认证</td>
+                    <td>场景模拟</td>
+                </tr>
+                <tr>
+                    <td rowspan="3">设备状态终端</td>
+                    <td>消防水泵/风机</td>
+                    <td>智能控制柜</td>
+                    <td>电流/电压监测≥1Hz、断电报警</td>
+                    <td>-</td>
+                    <td>CCCF消防产品强制认证</td>
+                    <td>技术测试</td>
+                </tr>
+                <tr>
+                    <td>防火门/卷帘</td>
+                    <td>门磁传感器</td>
+                    <td>状态反馈延迟≤0.5s、防护等级IP54</td>
+                    <td>-</td>
+                    <td>CCCF消防产品强制认证</td>
+                    <td>技术测试</td>
+                </tr>
+                <tr>
+                    <td>喷淋系统</td>
+                    <td>信号阀传感器</td>
+                    <td>阀位监测精度±2%、适配DN50-DN300阀门</td>
+                    <td>-</td>
+                    <td>CCCF消防产品强制认证</td>
+                    <td>技术测试</td>
+                </tr>
+                <tr>
+                    <td rowspan="2">环境安全终端</td>
+                    <td>化工园区/餐饮区</td>
+                    <td>燃气泄漏探测器</td>
+                    <td>检测量程0-100%LEL、报警阈值≤20%LEL、响应≤3s</td>
+                    <td>防爆Exd IIBT4 Ga</td>
+                    <td>CCCF消防产品强制认证</td>
+                    <td>场景模拟</td>
+                </tr>
+                <tr>
+                    <td>配电室</td>
+                    <td>电气火灾监控终端</td>
+                    <td>剩余电流≥50mA、温度≥130℃时报警</td>
+                    <td>高温≥85℃</td>
+                    <td>CCCF消防产品强制认证</td>
+                    <td>场景模拟</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <!-- 2. 感知节点部署规范图集 -->
+    <div class="section" id="deploy-chart">
+        <h2>二、感知节点部署规范图集</h2>
+        <h3>2.1 部署规范表（表3-2完整版）</h3>
+        <div class="table-box">
+            <table>
+                <tr>
+                    <th>应用场景</th>
+                    <th>设备类型</th>
+                    <th>安装/部署要求</th>
+                    <th>核心性能/参数</th>
+                    <th>额外规范/联动要求</th>
+                </tr>
+                <tr>
+                    <td rowspan="2">商业综合体-公共区域</td>
+                    <td>烟感探测器</td>
+                    <td>按保护半径≤5.8m网格部署，层高＞6m增设吸气式感烟</td>
+                    <td>-</td>
+                    <td>-</td>
+                </tr>
+                <tr>
+                    <td>AI双光谱热成像终端</td>
+                    <td>安装高度8-12m，视角覆盖≥150㎡/台</td>
+                    <td>火焰识别、大空间火情监测</td>
+                    <td>-</td>
+                </tr>
+                <tr>
+                    <td>商业综合体-设备机房</td>
+                    <td>压力变送器/液位传感器/控制柜监测模块</td>
+                    <td>变送器装进出水管路；液位传感器部署水箱/水池；模块内置控制柜</td>
+                    <td>量程0-2.5MPa；精度±1cm；采样≥1次/秒</td>
+                    <td>实时反馈水泵/供水状态</td>
+                </tr>
+                <tr>
+                    <td>商业综合体-餐饮区</td>
+                    <td>燃气泄漏探测器</td>
+                    <td>距气源设备1-1.5m安装</td>
+                    <td>报警阈值≤20%LEL、响应≤3s</td>
+                    <td>联动排风系统控制模块</td>
+                </tr>
+                <tr>
+                    <td>化工园区-防爆区域</td>
+                    <td>可燃气体传感器</td>
+                    <td>部署间距≤10m，交叉监测组网</td>
+                    <td>防护等级IP66</td>
+                    <td>ATEX Zone1/IECEx认证、316L不锈钢外壳≥3mm</td>
+                </tr>
+                <tr>
+                    <td>化工园区-储罐区</td>
+                    <td>温度传感器/风向风速仪</td>
+                    <td>沿罐体周长每15m布设温度传感器；顶部安装风速仪</td>
+                    <td>风速仪启动风速≤0.5m/s</td>
+                    <td>温度数据联动喷淋系统</td>
+                </tr>
+                <tr>
+                    <td>化工园区-管廊区域</td>
+                    <td>分布式光纤测温系统</td>
+                    <td>每隔50m设置1个监测点</td>
+                    <td>采样≥1次/分钟，异常温差≥8℃报警</td>
+                    <td>-</td>
+                </tr>
+                <tr>
+                    <td rowspan="2">老旧小区-楼道</td>
+                    <td>无线烟感</td>
+                    <td>距天花板0.3-0.5m，每单元每层≥1个，楼梯转角增设</td>
+                    <td>LoRa/NB-IoT、待机≥5年</td>
+                    <td>-</td>
+                </tr>
+                <tr>
+                    <td>剩余电流传感器</td>
+                    <td>电气井内部署</td>
+                    <td>监测阈值≥50mA</td>
+                    <td>-</td>
+                </tr>
+                <tr>
+                    <td>老旧小区-消防通道/室外</td>
+                    <td>智能摄像机/压力传感器/LoRa中继节点</td>
+                    <td>摄像机距地2.5m；传感器加装消火栓；每3栋楼1个中继节点</td>
+                    <td>通道占用识别；采样≥2次/小时；通信距离≥1km</td>
+                    <td>中继节点确保通信成功率≥99%</td>
+                </tr>
+            </table>
+        </div>
+
+        <h3>2.2 三大场景部署示意图</h3>
+        <div class="chart-box">
+            <div class="chart-title">商业综合体/化工园区/老旧小区 感知节点部署拓扑</div>
+            <div class="mermaid">
+                graph TB
+                    subgraph 商业综合体["商业综合体部署拓扑"]
+                        A1[公共区域<br/>烟感+热成像] --> A[区域边缘网关]
+                        A2[设备机房<br/>压力+液位+控制柜模块] --> A
+                        A3[餐饮区<br/>燃气探测器+排风联动] --> A
+                    end
+                    subgraph 化工园区["化工园区部署拓扑"]
+                        B1[防爆区<br/>可燃气体传感器（≤10m间距）] --> B[防爆型边缘网关]
+                        B2[储罐区<br/>温度传感器+风速仪+喷淋联动] --> B
+                        B3[管廊区<br/>分布式光纤测温（50m/点）] --> B
+                    end
+                    subgraph 老旧小区["老旧小区部署拓扑"]
+                        C1[楼道<br/>无线烟感+剩余电流传感器] --> C[LoRa中继节点]
+                        C2[消防通道<br/>智能摄像机] --> C
+                        C3[室外<br/>消火栓压力传感器] --> C
+                    end
+                    A --> D[智慧消防平台]
+                    B --> D
+                    C --> D
+                    style 商业综合体 fill:#fef0f0,stroke:#d92121,stroke-width:2px
+                    style 化工园区 fill:#f0f7fe,stroke:#0066cc,stroke-width:2px
+                    style 老旧小区 fill:#f0fef0,stroke:#009966,stroke-width:2px
+                    style D fill:#f8f9fa,stroke:#333,stroke-width:2px
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. 数据处理技术流程图 -->
+    <div class="section" id="data-flow">
+        <h2>三、数据处理技术流程图</h2>
+        <h3>3.1 数据处理规范表（表3-3完整版）</h3>
+        <div class="table-box">
+            <table>
+                <tr>
+                    <th>处理阶段</th>
+                    <th>核心问题/目标</th>
+                    <th>关键技术手段</th>
+                    <th>典型应用示例</th>
+                </tr>
+                <tr>
+                    <td>数据清洗</td>
+                    <td>噪声干扰、数据缺失、重复数据</td>
+                    <td>1.异常值：3σ原则→均值替换<br/>2.缺失值：≤5分钟线性插值，＞5分钟故障报警<br/>3.重复值：时间戳去重，保留最新</td>
+                    <td>压力变送器10MPa异常值→替换为前3次采样均值</td>
+                </tr>
+                <tr>
+                    <td>数据转换</td>
+                    <td>格式混乱、单位不统一、隐私保护</td>
+                    <td>1.格式标准化：非结构化→结构化表格<br/>2.单位换算：kPa→MPa、℃→K<br/>3.数据脱敏：视频人像模糊化</td>
+                    <td>商场监控视频→模糊化人员信息，符合个保法</td>
+                </tr>
+                <tr>
+                    <td>数据融合</td>
+                    <td>单一数据不足、火情误报风险</td>
+                    <td>1.跨节点融合：烟感+热成像+门磁<br/>2.时空融合：连续多天数据趋势分析<br/>3.多维度融合：设备状态+环境数据</td>
+                    <td>烟感报警+温度上升+门未关→确认真实火情，降低误报</td>
+                </tr>
+                <tr>
+                    <td>数据降维</td>
+                    <td>数据维度过高、存储/计算压力</td>
+                    <td>1.PCA主成分分析：提取核心特征<br/>2.阈值筛选：仅保留异常/关键数据<br/>3.数据聚合：常规数据小时级均值存储</td>
+                    <td>热成像10+维度数据→提取3个核心特征（高温面积、升温速率、帧差）</td>
+                </tr>
+            </table>
+        </div>
+
+        <h3>3.2 数据采集-预处理-应用全流程示意图</h3>
+        <div class="chart-box">
+            <div class="chart-title">智慧消防感知数据全生命周期流转逻辑</div>
+            <div class="mermaid">
+                graph LR
+                    subgraph 采集层["一、数据采集层"]
+                        C1[火灾监测节点<br/>烟感/热成像/光纤] --> C[感知节点集群]
+                        C2[设备状态节点<br/>压力/液位/门磁] --> C
+                        C3[环境安全节点<br/>燃气/剩余电流/温湿度] --> C
+                        C4[采集规则<br/>触发式+周期性+动态阈值] --> C
+                    end
+                    subgraph 传输层["二、数据传输层"]
+                        T1[无线传输<br/>LoRa/NB-IoT/5G] --> T[边缘网关]
+                        T2[有线传输<br/>RVVP屏蔽线/POE以太网] --> T
+                        T3[传输保障<br/>重传机制+主备链路] --> T
+                    end
+                    subgraph 预处理层["三、数据预处理层"]
+                        P1[数据清洗<br/>去噪/补全/去重] --> P[数据处理中心]
+                        P2[数据转换<br/>标准化/换算/脱敏] --> P
+                        P3[数据融合<br/>跨节点/时空/多维度] --> P
+                        P4[数据降维<br/>PCA/阈值筛选/聚合] --> P
+                    end
+                    subgraph 应用层["四、数据应用层"]
+                        A1[实时监测<br/>设备状态/环境数据可视化]
+                        A2[智能预警<br/>火情/故障提前≥15分钟]
+                        A3[联动处置<br/>喷淋/排风/报警系统联动]
+                        A4[数据追溯<br/>日志留存≥5年，合规审计]
+                    end
+                    C --> T --> P --> A1 & A2 & A3 & A4
+                    style 采集层 fill:#fef0f0,stroke:#d92121,stroke-width:2px
+                    style 传输层 fill:#f0f7fe,stroke:#0066cc,stroke-width:2px
+                    style 预处理层 fill:#f0fef0,stroke:#009966,stroke-width:2px
+                    style 应用层 fill:#f8f9fa,stroke:#333,stroke-width:2px
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. 关键参数对照表 -->
+    <div class="section" id="param-compare">
+        <h2>四、关键参数对照表</h2>
+        <div class="table-box">
+            <table>
+                <tr>
+                    <th>设备类型</th>
+                    <th>采样频率</th>
+                    <th>响应时间</th>
+                    <th>测量精度</th>
+                    <th>续航/供电</th>
+                    <th>防护等级</th>
+                    <th>其他核心参数</th>
+                </tr>
+                <tr>
+                    <td>AI双光谱热成像终端</td>
+                    <td>视频25帧/秒、温度≥1次/秒</td>
+                    <td>烟雾识别≤1s、火焰识别≤0.5s</td>
+                    <td>测温误差≤±2℃</td>
+                    <td>市电+备用电池≥4h</td>
+                    <td>IP54</td>
+                    <td>火焰识别≥98%、视角覆盖≥150㎡</td>
+                </tr>
+                <tr>
+                    <td>低功耗无线烟感</td>
+                    <td>周期性≥1次/分钟，报警实时</td>
+                    <td>报警响应≤3s</td>
+                    <td>-</td>
+                    <td>电池待机≥5年</td>
+                    <td>IP30</td>
+                    <td>声光报警≥85dB、通信成功率≥99%</td>
+                </tr>
+                <tr>
+                    <td>吸气式感烟探测器</td>
+                    <td>≥1次/秒</td>
+                    <td>报警响应≤5s</td>
+                    <td>采样半径≤5m</td>
+                    <td>市电</td>
+                    <td>IP54</td>
+                    <td>高粉尘/高湿环境适应</td>
+                </tr>
+                <tr>
+                    <td>信号阀传感器</td>
+                    <td>≥1次/秒</td>
+                    <td>状态反馈≤0.5s</td>
+                    <td>阀位±2%</td>
+                    <td>电池/市电</td>
+                    <td>IP54</td>
+                    <td>适配DN50-DN300阀门</td>
+                </tr>
+                <tr>
+                    <td>燃气泄漏探测器</td>
+                    <td>正常5次/分钟，阈值附近10次/分钟</td>
+                    <td>响应≤3s</td>
+                    <td>量程0-100%LEL</td>
+                    <td>电池/市电</td>
+                    <td>IP66、防爆Exd IIBT4 Ga</td>
+                    <td>报警阈值≤20%LEL</td>
+                </tr>
+                <tr>
+                    <td>电气火灾监控终端</td>
+                    <td>≥1次/秒</td>
+                    <td>报警响应≤5s</td>
+                    <td>剩余电流±5mA、温度±1℃</td>
+                    <td>市电</td>
+                    <td>IP54、耐温≥85℃</td>
+                    <td>剩余电流≥50mA、温度≥130℃报警</td>
+                    </tr>
+                <tr>
+                    <td>压力变送器</td>
+                    <td>≥1次/秒</td>
+                    <td>数据反馈≤0.1s</td>
+                    <td>量程0-2.5MPa、±0.5%FS</td>
+                    <td>市电</td>
+                    <td>IP65</td>
+                    <td>消防水管路压力监测</td>
+                </tr>
+                <tr>
+                    <td>液位传感器</td>
+                    <td>≥1次/分钟</td>
+                    <td>数据反馈≤0.5s</td>
+                    <td>±1cm</td>
+                    <td>市电</td>
+                    <td>IP68</td>
+                    <td>水箱/水池水位监测</td>
+                </tr>
+                <tr>
+                    <td>LoRa中继节点</td>
+                    <td>-</td>
+                    <td>数据转发≤0.3s</td>
+                    <td>-</td>
+                    <td>市电+备用电池≥2h</td>
+                    <td>IP54</td>
+                    <td>通信距离≥1km、成功率≥99%</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <!-- 5. 合规标准索引 -->
+    <div class="section" id="compliance-index">
+        <h2>五、合规标准索引表</h2>
+        <div class="table-box">
+            <table>
+                <tr>
+                    <th>合规标准/认证</th>
+                    <th>核心适用环节</th>
+                    <th>关键条款/要求</th>
+                    <th>对应设备/场景</th>
+                </tr>
+                <tr>
+                    <td rowspan="4">GB55036-2022<br/>《消防设施通用规范》</td>
+                    <td>设备选型</td>
+                    <td>第4.0.7条：信号阀状态实时反馈至消防控制室</td>
+                    <td>信号阀传感器、喷淋系统</td>
+                </tr>
+                <tr>
+                    <td>系统联动</td>
+                    <td>第12章：火灾报警系统与灭火设施可靠联动，消防水泵机械应急启泵≤5分钟</td>
+                    <td>AI热成像、消防水泵智能控制柜</td>
+                </tr>
+                <tr>
+                    <td>运维管理</td>
+                    <td>消防设施维修记录留存≥5年，设备状态实时监测</td>
+                    <td>所有感知终端、智慧消防平台</td>
+                </tr>
+                <tr>
+                    <td>数据要求</td>
+                    <td>关键设备数据“实时反馈”，无延迟、无丢失</td>
+                    <td>水泵/风机/阀门等核心设备传感器</td>
+                </tr>
+                <tr>
+                    <td rowspan="4">四川T/SSACE 022—2024<br/>《建筑消防物联网系统技术规程》</td>
+                    <td>部署要求</td>
+                    <td>感知层采样频率≥1次/分钟，数据传输≥2次/小时，备用电源≥2h</td>
+                    <td>所有无线感知终端</td>
+                </tr>
+                <tr>
+                    <td>传输要求</td>
+                    <td>无线节点支持重传机制，数据传输成功率≥99%；网关支持Modbus/MQTT协议转换</td>
+                    <td>LoRa/NB-IoT终端、边缘网关</td>
+                </tr>
+                <tr>
+                    <td>验收要求</td>
+                    <td>设备在线率≥98%，误报率≤0.1%，72小时连续运行无故障</td>
+                    <td>全套物联网感知系统</td>
+                </tr>
+                <tr>
+                    <td>数据要求</td>
+                    <td>数据可追溯，操作日志留存≥5年，敏感数据加密</td>
+                    <td>智慧消防平台、数据处理中心</td>
+                </tr>
+                <tr>
+                    <td>CCCF消防产品强制认证</td>
+                    <td>设备选型</td>
+                    <td>消防感知终端必须通过CCCF认证，无认证产品不得使用</td>
+                    <td>烟感、燃气探测器、电气火灾监控终端等所有消防专用设备</td>
+                </tr>
+                <tr>
+                    <td>GB/T 28181</td>
+                    <td>视频终端对接</td>
+                    <td>视频监控终端需兼容该协议，支持平台统一对接、录像回放</td>
+                    <td>AI热成像终端、消防通道智能摄像机</td>
+                </tr>
+                <tr>
+                    <td>《数据安全法》/《个人信息保护法》</td>
+                    <td>数据处理</td>
+                    <td>数据采集最小必要原则，视频数据脱敏，敏感数据加密传输/存储</td>
+                    <td>所有涉及视频、人员密度的感知终端及数据平台</td>
+                </tr>
+                <tr>
+                    <td>安徽DB34/T5244-2025</td>
+                    <td>设备选型</td>
+                    <td>感知终端需支持边缘计算功能，实现本地数据预处理</td>
+                    <td>所有物联网感知终端（安徽地区适用）</td>
+                </tr>
+                <tr>
+                    <td>江苏地方标准</td>
+                    <td>传输要求</td>
+                    <td>无线终端空旷环境通信距离≥1km</td>
+                    <td>LoRa/NB-IoT无线感知终端（江苏地区适用）</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // 平滑滚动：点击导航跳转到对应模块
+        document.querySelectorAll('.nav a').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                document.querySelector(this.getAttribute('href')).scrollIntoView({
+                    behavior: 'smooth'
+                });
+            });
+        });
+    </script>
+</body>
+</html>
