@@ -1,0 +1,1131 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智慧消防运维团队能力建设管理系统</title>
+    <!-- 引入Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入Font Awesome图标 -->
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <!-- 引入Chart.js图表库 -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+    
+    <!-- 自定义Tailwind配置 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#165DFF',       // 主色调-科技蓝
+                        tech: '#0FC6C2',          // 技术操作-青蓝
+                        emergency: '#FF7D00',     // 应急处置-橙红
+                        collaboration: '#722ED1', // 协同协作-紫蓝
+                        fire: '#F53F3F',          // 消防红
+                        success: '#00B42A',       // 成功绿
+                        warning: '#FF7D00',       // 警告橙
+                        danger: '#F53F3F',        // 危险红
+                        normal: '#86909C',        // 常规灰
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['Consolas', 'Monaco', 'monospace']
+                    },
+                }
+            }
+        }
+    </script>
+    
+    <!-- 自定义工具类 -->
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .card-hover {
+                transition: all 0.3s ease;
+            }
+            .card-hover:hover {
+                transform: translateY(-4px);
+                box-shadow: 0 8px 24px rgba(22, 93, 255, 0.1);
+            }
+            .progress-bar {
+                height: 8px;
+                border-radius: 4px;
+                overflow: hidden;
+            }
+            .skill-item {
+                transition: all 0.2s ease;
+            }
+            .skill-item:hover {
+                background-color: rgba(22, 93, 255, 0.05);
+            }
+            .tab-active {
+                border-bottom: 2px solid #165DFF;
+                color: #165DFF;
+                font-weight: 600;
+            }
+            .animate-pulse-slow {
+                animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans text-gray-800">
+    <!-- 顶部导航栏 -->
+    <header class="bg-white shadow-md sticky top-0 z-50">
+        <div class="container mx-auto px-4 py-3 flex flex-col md:flex-row items-center justify-between">
+            <div class="flex items-center space-x-3 mb-3 md:mb-0">
+                <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                    <i class="fa fa-shield text-primary text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold text-gray-800">智慧消防运维团队能力建设管理系统</h1>
+                    <p class="text-sm text-gray-500">能力评估 · 培训管理 · 实战演练 · 绩效分析</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center space-x-6">
+                <!-- 团队状态 -->
+                <div class="flex items-center bg-primary/5 rounded-full px-3 py-1">
+                    <div class="w-3 h-3 rounded-full bg-success animate-pulse mr-2"></div>
+                    <span class="text-sm font-medium text-primary">运维团队在岗率 98%</span>
+                </div>
+                
+                <!-- 操作按钮 -->
+                <div class="flex items-center space-x-3">
+                    <button class="bg-primary/10 hover:bg-primary/20 text-primary rounded-full px-3 py-1 text-sm flex items-center transition-colors">
+                        <i class="fa fa-refresh mr-1"></i> 刷新数据
+                    </button>
+                    <button class="bg-primary hover:bg-primary/90 text-white rounded-full px-3 py-1 text-sm flex items-center transition-colors">
+                        <i class="fa fa-plus mr-1"></i> 新增评估
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 二级导航 -->
+        <nav class="border-t border-gray-100 px-4 py-2">
+            <div class="container mx-auto flex space-x-8 overflow-x-auto scrollbar-hide">
+                <a href="#overview" class="tab-active px-1 py-2 whitespace-nowrap">能力总览</a>
+                <a href="#technical" class="text-gray-600 hover:text-primary px-1 py-2 whitespace-nowrap transition-colors">技术操作能力</a>
+                <a href="#emergency" class="text-gray-600 hover:text-primary px-1 py-2 whitespace-nowrap transition-colors">应急处置能力</a>
+                <a href="#collaboration" class="text-gray-600 hover:text-primary px-1 py-2 whitespace-nowrap transition-colors">协同协作能力</a>
+                <a href="#training" class="text-gray-600 hover:text-primary px-1 py-2 whitespace-nowrap transition-colors">培训管理</a>
+                <a href="#assessment" class="text-gray-600 hover:text-primary px-1 py-2 whitespace-nowrap transition-colors">能力评估</a>
+                <a href="#drill" class="text-gray-600 hover:text-primary px-1 py-2 whitespace-nowrap transition-colors">实战演练</a>
+            </div>
+        </nav>
+    </header>
+
+    <!-- 主要内容区域 -->
+    <main class="container mx-auto px-4 py-6">
+        <!-- 1. 能力总览面板 -->
+        <section id="overview" class="mb-8">
+            <h2 class="text-xl font-bold mb-6 flex items-center text-primary">
+                <i class="fa fa-dashboard mr-2"></i> 运维团队能力总览
+            </h2>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6">
+                <!-- 综合能力评分 -->
+                <div class="bg-white rounded-lg shadow-md p-4 card-hover">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <p class="text-gray-500 text-sm">团队综合能力评分</p>
+                            <h3 class="text-3xl font-bold mt-1 text-primary">86<span class="text-lg">/100</span></h3>
+                        </div>
+                        <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                            <i class="fa fa-star text-xl"></i>
+                        </div>
+                    </div>
+                    <div class="progress-bar bg-gray-200">
+                        <div class="bg-primary" style="width: 86%"></div>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-2">较上季度 <span class="text-success">↑ 5分</span></p>
+                </div>
+                
+                <!-- 技术操作能力 -->
+                <div class="bg-white rounded-lg shadow-md p-4 card-hover">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <p class="text-gray-500 text-sm">技术操作能力</p>
+                            <h3 class="text-3xl font-bold mt-1 text-tech">92<span class="text-lg">/100</span></h3>
+                        </div>
+                        <div class="w-10 h-10 rounded-full bg-tech/10 flex items-center justify-center text-tech">
+                            <i class="fa fa-cogs text-xl"></i>
+                        </div>
+                    </div>
+                    <div class="progress-bar bg-gray-200">
+                        <div class="bg-tech" style="width: 92%"></div>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-2">较上季度 <span class="text-success">↑ 3分</span></p>
+                </div>
+                
+                <!-- 应急处置能力 -->
+                <div class="bg-white rounded-lg shadow-md p-4 card-hover">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <p class="text-gray-500 text-sm">应急处置能力</p>
+                            <h3 class="text-3xl font-bold mt-1 text-emergency">81<span class="text-lg">/100</span></h3>
+                        </div>
+                        <div class="w-10 h-10 rounded-full bg-emergency/10 flex items-center justify-center text-emergency">
+                            <i class="fa fa-ambulance text-xl"></i>
+                        </div>
+                    </div>
+                    <div class="progress-bar bg-gray-200">
+                        <div class="bg-emergency" style="width: 81%"></div>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-2">较上季度 <span class="text-success">↑ 8分</span></p>
+                </div>
+                
+                <!-- 协同协作能力 -->
+                <div class="bg-white rounded-lg shadow-md p-4 card-hover">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <p class="text-gray-500 text-sm">协同协作能力</p>
+                            <h3 class="text-3xl font-bold mt-1 text-collaboration">83<span class="text-lg">/100</span></h3>
+                        </div>
+                        <div class="w-10 h-10 rounded-full bg-collaboration/10 flex items-center justify-center text-collaboration">
+                            <i class="fa fa-users text-xl"></i>
+                        </div>
+                    </div>
+                    <div class="progress-bar bg-gray-200">
+                        <div class="bg-collaboration" style="width: 83%"></div>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-2">较上季度 <span class="text-success">↑ 4分</span></p>
+                </div>
+            </div>
+            
+            <!-- 能力趋势与分布 -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- 能力趋势图表 -->
+                <div class="bg-white rounded-lg shadow-md p-4 lg:col-span-2">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-bold">团队能力发展趋势</h3>
+                        <select class="border border-gray-200 rounded px-2 py-1 text-sm">
+                            <option>近6个月</option>
+                            <option>近12个月</option>
+                            <option>近24个月</option>
+                        </select>
+                    </div>
+                    <div class="h-64">
+                        <canvas id="capabilityTrendChart"></canvas>
+                    </div>
+                </div>
+                
+                <!-- 能力分布雷达图 -->
+                <div class="bg-white rounded-lg shadow-md p-4">
+                    <h3 class="font-bold mb-4">核心能力分布</h3>
+                    <div class="h-64">
+                        <canvas id="capabilityRadarChart"></canvas>
+                    </div>
+                    <div class="mt-4 grid grid-cols-3 gap-2 text-xs">
+                        <div class="flex items-center">
+                            <div class="w-3 h-3 rounded-full bg-tech mr-1"></div>
+                            <span>技术操作</span>
+                        </div>
+                        <div class="flex items-center">
+                            <div class="w-3 h-3 rounded-full bg-emergency mr-1"></div>
+                            <span>应急处置</span>
+                        </div>
+                        <div class="flex items-center">
+                            <div class="w-3 h-3 rounded-full bg-collaboration mr-1"></div>
+                            <span>协同协作</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 能力短板与提升建议 -->
+            <div class="bg-white rounded-lg shadow-md p-4 mt-6">
+                <h3 class="font-bold mb-4 flex items-center">
+                    <i class="fa fa-lightbulb-o text-warning mr-2"></i> 能力短板分析与提升建议
+                </h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <!-- 技术操作短板 -->
+                    <div class="border border-tech/20 rounded-lg p-3 bg-tech/5">
+                        <h4 class="font-medium text-tech mb-2 flex items-center">
+                            <i class="fa fa-cogs mr-1"></i> 技术操作短板
+                        </h4>
+                        <ul class="space-y-2 text-sm text-gray-700 mb-3">
+                            <li class="flex items-start">
+                                <i class="fa fa-exclamation-circle text-warning mt-1 mr-2"></i>
+                                <span>智能传感器故障排查效率待提升</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fa fa-exclamation-circle text-warning mt-1 mr-2"></i>
+                                <span>大数据分析能力不足，无法深度挖掘设备健康数据</span>
+                            </li>
+                        </ul>
+                        <button class="w-full text-sm bg-tech/10 text-tech rounded py-1 hover:bg-tech/20 transition-colors">
+                            查看提升方案
+                        </button>
+                    </div>
+                    
+                    <!-- 应急处置短板 -->
+                    <div class="border border-emergency/20 rounded-lg p-3 bg-emergency/5">
+                        <h4 class="font-medium text-emergency mb-2 flex items-center">
+                            <i class="fa fa-ambulance mr-1"></i> 应急处置短板
+                        </h4>
+                        <ul class="space-y-2 text-sm text-gray-700 mb-3">
+                            <li class="flex items-start">
+                                <i class="fa fa-exclamation-circle text-warning mt-1 mr-2"></i>
+                                <span>重大隐患级别判断准确率仅78%</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fa fa-exclamation-circle text-warning mt-1 mr-2"></i>
+                                <span>初期火情扑救技能熟练度不足</span>
+                            </li>
+                        </ul>
+                        <button class="w-full text-sm bg-emergency/10 text-emergency rounded py-1 hover:bg-emergency/20 transition-colors">
+                            查看提升方案
+                        </button>
+                    </div>
+                    
+                    <!-- 协同协作短板 -->
+                    <div class="border border-collaboration/20 rounded-lg p-3 bg-collaboration/5">
+                        <h4 class="font-medium text-collaboration mb-2 flex items-center">
+                            <i class="fa fa-users mr-1"></i> 协同协作短板
+                        </h4>
+                        <ul class="space-y-2 text-sm text-gray-700 mb-3">
+                            <li class="flex items-start">
+                                <i class="fa fa-exclamation-circle text-warning mt-1 mr-2"></i>
+                                <span>与消防部门信息同步存在延迟</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fa fa-exclamation-circle text-warning mt-1 mr-2"></i>
+                                <span>跨部门演练参与率仅65%</span>
+                            </li>
+                        </ul>
+                        <button class="w-full text-sm bg-collaboration/10 text-collaboration rounded py-1 hover:bg-collaboration/20 transition-colors">
+                            查看提升方案
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2. 技术操作能力面板 -->
+        <section id="technical" class="mb-8">
+            <h2 class="text-xl font-bold mb-6 flex items-center text-tech">
+                <i class="fa fa-cogs mr-2"></i> 技术操作能力管理
+            </h2>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- 核心技能清单 -->
+                <div class="bg-white rounded-lg shadow-md p-4 lg:col-span-1">
+                    <h3 class="font-bold mb-4">核心技术技能清单</h3>
+                    
+                    <div class="space-y-3 max-h-[500px] overflow-y-auto">
+                        <!-- 智慧平台操作 -->
+                        <div class="border border-gray-100 rounded-lg p-3 skill-item">
+                            <div class="flex justify-between items-center mb-2">
+                                <div class="flex items-center">
+                                    <i class="fa fa-desktop text-tech mr-2"></i>
+                                    <span class="font-medium">智慧消防平台操作</span>
+                                </div>
+                                <span class="text-xs bg-success/10 text-success px-2 py-0.5 rounded">95%</span>
+                            </div>
+                            <div class="progress-bar bg-gray-200 mb-2">
+                                <div class="bg-tech" style="width: 95%"></div>
+                            </div>
+                            <div class="flex justify-between text-xs text-gray-500">
+                                <span>数据监测 · 远程控制 · 报表分析</span>
+                                <button class="text-primary hover:text-primary/80">详情</button>
+                            </div>
+                        </div>
+                        
+                        <!-- 传感器故障排查 -->
+                        <div class="border border-gray-100 rounded-lg p-3 skill-item">
+                            <div class="flex justify-between items-center mb-2">
+                                <div class="flex items-center">
+                                    <i class="fa fa-microchip text-tech mr-2"></i>
+                                    <span class="font-medium">智能传感器故障排查</span>
+                                </div>
+                                <span class="text-xs bg-warning/10 text-warning px-2 py-0.5 rounded">78%</span>
+                            </div>
+                            <div class="progress-bar bg-gray-200 mb-2">
+                                <div class="bg-tech" style="width: 78%"></div>
+                            </div>
+                            <div class="flex justify-between text-xs text-gray-500">
+                                <span>电池检测 · 数据修复 · 校准调试</span>
+                                <button class="text-primary hover:text-primary/80">详情</button>
+                            </div>
+                        </div>
+                        
+                        <!-- 智能终端维护 -->
+                        <div class="border border-gray-100 rounded-lg p-3 skill-item">
+                            <div class="flex justify-between items-center mb-2">
+                                <div class="flex items-center">
+                                    <i class="fa fa-mobile text-tech mr-2"></i>
+                                    <span class="font-medium">智能终端设备维护</span>
+                                </div>
+                                <span class="text-xs bg-success/10 text-success px-2 py-0.5 rounded">90%</span>
+                            </div>
+                            <div class="progress-bar bg-gray-200 mb-2">
+                                <div class="bg-tech" style="width: 90%"></div>
+                            </div>
+                            <div class="flex justify-between text-xs text-gray-500">
+                                <span>硬件维护 · 软件升级 · 通信调试</span>
+                                <button class="text-primary hover:text-primary/80">详情</button>
+                            </div>
+                        </div>
+                        
+                        <!-- 数据分析能力 -->
+                        <div class="border border-gray-100 rounded-lg p-3 skill-item">
+                            <div class="flex justify-between items-center mb-2">
+                                <div class="flex items-center">
+                                    <i class="fa fa-bar-chart text-tech mr-2"></i>
+                                    <span class="font-medium">运维数据分析能力</span>
+                                </div>
+                                <span class="text-xs bg-warning/10 text-warning px-2 py-0.5 rounded">75%</span>
+                            </div>
+                            <div class="progress-bar bg-gray-200 mb-2">
+                                <div class="bg-tech" style="width: 75%"></div>
+                            </div>
+                            <div class="flex justify-between text-xs text-gray-500">
+                                <span>健康度分析 · 趋势预测 · 报表生成</span>
+                                <button class="text-primary hover:text-primary/80">详情</button>
+                            </div>
+                        </div>
+                        
+                        <!-- 网络故障处理 -->
+                        <div class="border border-gray-100 rounded-lg p-3 skill-item">
+                            <div class="flex justify-between items-center mb-2">
+                                <div class="flex items-center">
+                                    <i class="fa fa-wifi text-tech mr-2"></i>
+                                    <span class="font-medium">通信网络故障处理</span>
+                                </div>
+                                <span class="text-xs bg-success/10 text-success px-2 py-0.5 rounded">88%</span>
+                            </div>
+                            <div class="progress-bar bg-gray-200 mb-2">
+                                <div class="bg-tech" style="width: 88%"></div>
+                            </div>
+                            <div class="flex justify-between text-xs text-gray-500">
+                                <span>断网排查 · 信号增强 · 协议调试</span>
+                                <button class="text-primary hover:text-primary/80">详情</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button class="w-full mt-4 border border-gray-200 rounded px-3 py-2 text-gray-700 hover:bg-gray-50 transition-colors flex items-center justify-center">
+                        <i class="fa fa-plus mr-2"></i> 添加技能项
+                    </button>
+                </div>
+                
+                <!-- 技能评估与培训 -->
+                <div class="bg-white rounded-lg shadow-md p-4 lg:col-span-2">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-bold">技术操作能力评估与培训计划</h3>
+                        <div class="flex space-x-2">
+                            <button class="bg-tech/10 text-tech rounded px-3 py-1 text-sm hover:bg-tech/20 transition-colors">技能评估</button>
+                            <button class="bg-primary/10 text-primary rounded px-3 py-1 text-sm hover:bg-primary/20 transition-colors">培训计划</button>
+                            <button class="bg-gray-100 text-gray-700 rounded px-3 py-1 text-sm hover:bg-gray-200 transition-colors">考核记录</button>
+                        </div>
+                    </div>
+                    
+                    <!-- 团队成员技能评估表 -->
+                    <div class="overflow-x-auto mb-6">
+                        <table class="w-full text-sm">
+                            <thead>
+                                <tr class="border-b border-gray-200 bg-gray-50">
+                                    <th class="text-left py-3 px-3 font-medium">运维人员</th>
+                                    <th class="text-left py-3 px-3 font-medium">平台操作</th>
+                                    <th class="text-left py-3 px-3 font-medium">故障排查</th>
+                                    <th class="text-left py-3 px-3 font-medium">设备维护</th>
+                                    <th class="text-left py-3 px-3 font-medium">数据分析</th>
+                                    <th class="text-left py-3 px-3 font-medium">综合评分</th>
+                                    <th class="text-left py-3 px-3 font-medium">状态</th>
+                                    <th class="text-left py-3 px-3 font-medium">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="border-b border-gray-100 hover:bg-gray-50">
+                                    <td class="py-3 px-3 font-medium">王技术</td>
+                                    <td class="py-3 px-3">98分 <span class="text-success text-xs">★</span></td>
+                                    <td class="py-3 px-3">90分 <span class="text-success text-xs">★</span></td>
+                                    <td class="py-3 px-3">95分 <span class="text-success text-xs">★</span></td>
+                                    <td class="py-3 px-3">88分 <span class="text-success text-xs">★</span></td>
+                                    <td class="py-3 px-3 font-medium text-success">93分</td>
+                                    <td class="py-3 px-3">
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-success/10 text-success">
+                                            <span class="w-2 h-2 rounded-full bg-success mr-1"></span>
+                                            优秀
+                                        </span>
+                                    </td>
+                                    <td class="py-3 px-3">
+                                        <button class="text-primary mr-2 hover:text-primary/80">详情</button>
+                                        <button class="text-gray-500 hover:text-primary">培训</button>
+                                    </td>
+                                </tr>
+                                <tr class="border-b border-gray-100 hover:bg-gray-50">
+                                    <td class="py-3 px-3 font-medium">李运维</td>
+                                    <td class="py-3 px-3">85分</td>
+                                    <td class="py-3 px-3">70分 <span class="text-warning text-xs">↓</span></td>
+                                    <td class="py-3 px-3">88分</td>
+                                    <td class="py-3 px-3">72分 <span class="text-warning text-xs">↓</span></td>
+                                    <td class="py-3 px-3 font-medium text-warning">79分</td>
+                                    <td class="py-3 px-3">
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-warning/10 text-warning">
+                                            <span class="w-2 h-2 rounded-full bg-warning mr-1"></span>
+                                            待提升
+                                        </span>
+                                    </td>
+                                    <td class="py-3 px-3">
+                                        <button class="text-primary mr-2 hover:text-primary/80">详情</button>
+                                        <button class="text-warning hover:text-warning/80">培训</button>
+                                    </td>
+                                </tr>
+                                <tr class="border-b border-gray-100 hover:bg-gray-50">
+                                    <td class="py-3 px-3 font-medium">张工</td>
+                                    <td class="py-3 px-3">90分</td>
+                                    <td class="py-3 px-3">85分</td>
+                                    <td class="py-3 px-3">92分</td>
+                                    <td class="py-3 px-3">80分</td>
+                                    <td class="py-3 px-3 font-medium text-primary">87分</td>
+                                    <td class="py-3 px-3">
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-primary/10 text-primary">
+                                            <span class="w-2 h-2 rounded-full bg-primary mr-1"></span>
+                                            良好
+                                        </span>
+                                    </td>
+                                    <td class="py-3 px-3">
+                                        <button class="text-primary mr-2 hover:text-primary/80">详情</button>
+                                        <button class="text-gray-500 hover:text-primary">培训</button>
+                                    </td>
+                                </tr>
+                                <tr class="hover:bg-gray-50">
+                                    <td class="py-3 px-3 font-medium">赵新人</td>
+                                    <td class="py-3 px-3">75分 <span class="text-danger text-xs">↓</span></td>
+                                    <td class="py-3 px-3">65分 <span class="text-danger text-xs">↓</span></td>
+                                    <td class="py-3 px-3">78分 <span class="text-warning text-xs">↓</span></td>
+                                    <td class="py-3 px-3">60分 <span class="text-danger text-xs">↓</span></td>
+                                    <td class="py-3 px-3 font-medium text-danger">69分</td>
+                                    <td class="py-3 px-3">
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-danger/10 text-danger">
+                                            <span class="w-2 h-2 rounded-full bg-danger mr-1"></span>
+                                            需强化
+                                        </span>
+                                    </td>
+                                    <td class="py-3 px-3">
+                                        <button class="text-primary mr-2 hover:text-primary/80">详情</button>
+                                        <button class="text-danger hover:text-danger/80">特训</button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- 重点培训计划 -->
+                    <div class="bg-tech/5 rounded-lg p-4">
+                        <h4 class="font-medium mb-3 text-tech flex items-center">
+                            <i class="fa fa-graduation-cap mr-2"></i> 技术能力提升培训计划
+                        </h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="border border-gray-100 rounded-lg p-3 bg-white">
+                                <div class="flex justify-between mb-2">
+                                    <span class="font-medium">智能传感器故障排查专项培训</span>
+                                    <span class="text-xs bg-warning/10 text-warning px-2 py-0.5 rounded">优先级高</span>
+                                </div>
+                                <div class="text-sm text-gray-600 space-y-1 mb-3">
+                                    <div><i class="fa fa-calendar text-gray-400 mr-1"></i> 培训时间：2026-03-10 09:00-17:00</div>
+                                    <div><i class="fa fa-user text-gray-400 mr-1"></i> 培训对象：李运维、赵新人等8人</div>
+                                    <div><i class="fa fa-book text-gray-400 mr-1"></i> 培训内容：电池寿命检测、数据异常修复、远程调试</div>
+                                </div>
+                                <button class="w-full text-sm bg-tech/10 text-tech rounded py-1 hover:bg-tech/20 transition-colors">
+                                    查看培训详情
+                                </button>
+                            </div>
+                            
+                            <div class="border border-gray-100 rounded-lg p-3 bg-white">
+                                <div class="flex justify-between mb-2">
+                                    <span class="font-medium">运维数据分析能力提升培训</span>
+                                    <span class="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded">常规培训</span>
+                                </div>
+                                <div class="text-sm text-gray-600 space-y-1 mb-3">
+                                    <div><i class="fa fa-calendar text-gray-400 mr-1"></i> 培训时间：2026-03-15 14:00-17:00</div>
+                                    <div><i class="fa fa-user text-gray-400 mr-1"></i> 培训对象：全体运维人员</div>
+                                    <div><i class="fa fa-book text-gray-400 mr-1"></i> 培训内容：设备健康度分析、趋势预测、报表制作</div>
+                                </div>
+                                <button class="w-full text-sm bg-tech/10 text-tech rounded py-1 hover:bg-tech/20 transition-colors">
+                                    查看培训详情
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. 应急处置能力面板 -->
+        <section id="emergency" class="mb-8">
+            <h2 class="text-xl font-bold mb-6 flex items-center text-emergency">
+                <i class="fa fa-ambulance mr-2"></i> 应急处置能力管理
+            </h2>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- 应急处置流程 -->
+                <div class="bg-white rounded-lg shadow-md p-4 lg:col-span-1">
+                    <h3 class="font-bold mb-4">标准化应急处置流程</h3>
+                    
+                    <div class="space-y-4">
+                        <!-- 一般隐患处置流程 -->
+                        <div class="border border-gray-100 rounded-lg p-3 card-hover">
+                            <div class="flex justify-between items-center mb-2">
+                                <div class="flex items-center">
+                                    <i class="fa fa-exclamation-circle text-normal mr-2"></i>
+                                    <span class="font-medium">一般隐患处置流程</span>
+                                </div>
+                                <span class="text-xs bg-normal/10 text-normal px-2 py-0.5 rounded">常规</span>
+                            </div>
+                            <ol class="list-decimal list-inside text-sm text-gray-700 space-y-1 ml-2 mb-3">
+                                <li>接收到智慧平台预警信息</li>
+                                <li>远程核实隐患情况，判断级别</li>
+                                <li>安排运维人员现场核查</li>
+                                <li>现场处置并记录情况</li>
+                                <li>平台更新处置状态，归档记录</li>
+                            </ol>
+                            <button class="w-full text-sm bg-normal/10 text-normal rounded py-1 hover:bg-normal/20 transition-colors">
+                                查看详细流程
+                            </button>
+                        </div>
+                        
+                        <!-- 重大隐患处置流程 -->
+                        <div class="border border-gray-100 rounded-lg p-3 card-hover">
+                            <div class="flex justify-between items-center mb-2">
+                                <div class="flex items-center">
+                                    <i class="fa fa-exclamation-triangle text-danger mr-2"></i>
+                                    <span class="font-medium">重大隐患处置流程</span>
+                                </div>
+                                <span class="text-xs bg-danger/10 text-danger px-2 py-0.5 rounded">紧急</span>
+                            </div>
+                            <ol class="list-decimal list-inside text-sm text-gray-700 space-y-1 ml-2 mb-3">
+                                <li>接收到智慧平台一级预警</li>
+                                <li>立即启动应急响应机制</li>
+                                <li>联动微型消防站，同步信息</li>
+                                <li>配合消防部门现场处置</li>
+                                <li>实时上报处置进展</li>
+                                <li>处置完成后复盘总结</li>
+                            </ol>
+                            <button class="w-full text-sm bg-danger/10 text-danger rounded py-1 hover:bg-danger/20 transition-colors">
+                                查看详细流程
+                            </button>
+                        </div>
+                        
+                        <!-- 应急技能清单 -->
+                        <div class="border border-gray-100 rounded-lg p-3">
+                            <h4 class="font-medium mb-3 text-emergency">核心应急技能要求</h4>
+                            <div class="space-y-2 text-sm">
+                                <div class="flex items-center">
+                                    <input type="checkbox" checked class="mr-2 h-4 w-4 text-emergency">
+                                    <span>初期火情扑救技能</span>
+                                </div>
+                                <div class="flex items-center">
+                                    <input type="checkbox" checked class="mr-2 h-4 w-4 text-emergency">
+                                    <span>消防装备规范使用</span>
+                                </div>
+                                <div class="flex items-center">
+                                    <input type="checkbox" checked class="mr-2 h-4 w-4 text-emergency">
+                                    <span>隐患级别精准判断</span>
+                                </div>
+                                <div class="flex items-center">
+                                    <input type="checkbox" class="mr-2 h-4 w-4 text-emergency">
+                                    <span>人员疏散引导能力</span>
+                                </div>
+                                <div class="flex items-center">
+                                    <input type="checkbox" class="mr-2 h-4 w-4 text-emergency">
+                                    <span>现场应急指挥能力</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 应急响应时效 -->
+                        <div class="border border-gray-100 rounded-lg p-3 bg-emergency/5">
+                            <h4 class="font-medium mb-3 text-emergency flex items-center">
+                                <i class="fa fa-clock-o mr-1"></i> 应急响应时效要求
+                            </h4>
+                            <div class="space-y-2 text-sm">
+                                <div class="flex justify-between">
+                                    <span>一般隐患响应时效</span>
+                                    <span class="font-medium">≤ 30分钟</span>
+                                </div>
+                                <div class="progress-bar bg-gray-200 mb-1">
+                                    <div class="bg-emergency" style="width: 90%"></div>
+                                </div>
+                                <div class="flex justify-between text-xs text-gray-500">
+                                    <span>当前平均：25分钟</span>
+                                    <span class="text-success">达标</span>
+                                </div>
+                                
+                                <div class="flex justify-between mt-3">
+                                    <span>重大隐患响应时效</span>
+                                    <span class="font-medium">≤ 10分钟</span>
+                                </div>
+                                <div class="progress-bar bg-gray-200 mb-1">
+                                    <div class="bg-emergency" style="width: 75%"></div>
+                                </div>
+                                <div class="flex justify-between text-xs text-gray-500">
+                                    <span>当前平均：12分钟</span>
+                                    <span class="text-warning">待提升</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 应急处置记录与评估 -->
+                <div class="bg-white rounded-lg shadow-md p-4 lg:col-span-2">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-bold">应急处置能力评估与记录</h3>
+                        <div class="flex space-x-2">
+                            <button class="bg-emergency/10 text-emergency rounded px-3 py-1 text-sm hover:bg-emergency/20 transition-colors">处置记录</button>
+                            <button class="bg-primary/10 text-primary rounded px-3 py-1 text-sm hover:bg-primary/20 transition-colors">能力评估</button>
+                            <button class="bg-gray-100 text-gray-700 rounded px-3 py-1 text-sm hover:bg-gray-200 transition-colors">技能考核</button>
+                        </div>
+                    </div>
+                    
+                    <!-- 应急处置记录列表 -->
+                    <div class="overflow-x-auto mb-6">
+                        <table class="w-full text-sm">
+                            <thead>
+                                <tr class="border-b border-gray-200 bg-gray-50">
+                                    <th class="text-left py-3 px-3 font-medium">处置编号</th>
+                                    <th class="text-left py-3 px-3 font-medium">隐患类型</th>
+                                    <th class="text-left py-3 px-3 font-medium">级别</th>
+                                    <th class="text-left py-3 px-3 font-medium">响应时间</th>
+                                    <th class="text-left py-3 px-3 font-medium">处置人员</th>
+                                    <th class="text-left py-3 px-3 font-medium">处置结果</th>
+                                    <th class="text-left py-3 px-3 font-medium">能力评分</th>
+                                    <th class="text-left py-3 px-3 font-medium">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="border-b border-gray-100 hover:bg-gray-50">
+                                    <td class="py-3 px-3">EM20260228001</td>
+                                    <td class="py-3 px-3">烟感传感器异常报警</td>
+                                    <td class="py-3 px-3">
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-danger/10 text-danger">
+                                            重大
+                                        </span>
+                                    </td>
+                                    <td class="py-3 px-3">8分钟 <span class="text-success text-xs">★</span></td>
+                                    <td class="py-3 px-3">王技术、李运维</td>
+                                    <td class="py-3 px-3">
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-success/10 text-success">
+                                            成功处置
+                                        </span>
+                                    </td>
+                                    <td class="py-3 px-3 font-medium text-success">95分</td>
+                                    <td class="py-3 px-3">
+                                        <button class="text-primary mr-2 hover:text-primary/80">详情</button>
+                                        <button class="text-gray-500 hover:text-primary">复盘</button>
+                                    </td>
+                                </tr>
+                                <tr class="border-b border-gray-100 hover:bg-gray-50">
+                                    <td class="py-3 px-3">EM20260227002</td>
+                                    <td class="py-3 px-3">温感数据异常</td>
+                                    <td class="py-3 px-3">
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-normal/10 text-normal">
+                                            一般
+                                        </span>
+                                    </td>
+                                    <td class="py-3 px-3">28分钟</td>
+                                    <td class="py-3 px-3">张工、赵新人</td>
+                                    <td class="py-3 px-3">
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-success/10 text-success">
+                                            成功处置
+                                        </span>
+                                    </td>
+                                    <td class="py-3 px-3 font-medium text-warning">78分</td>
+                                    <td class="py-3 px-3">
+                                        <button class="text-primary mr-2 hover:text-primary/80">详情</button>
+                                        <button class="text-gray-500 hover:text-primary">复盘</button>
+                                    </td>
+                                </tr>
+                                <tr class="border-b border-gray-100 hover:bg-gray-50">
+                                    <td class="py-3 px-3">EM20260226001</td>
+                                    <td class="py-3 px-3">消防栓水压不足</td>
+                                    <td class="py-3 px-3">
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-warning/10 text-warning">
+                                            较大
+                                        </span>
+                                    </td>
+                                    <td class="py-3 px-3">15分钟 <span class="text-warning text-xs">↓</span></td>
+                                    <td class="py-3 px-3">王技术、张工</td>
+                                    <td class="py-3 px-3">
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-success/10 text-success">
+                                            成功处置
+                                        </span>
+                                    </td>
+                                    <td class="py-3 px-3 font-medium text-primary">85分</td>
+                                    <td class="py-3 px-3">
+                                        <button class="text-primary mr-2 hover:text-primary/80">详情</button>
+                                        <button class="text-gray-500 hover:text-primary">复盘</button>
+                                    </td>
+                                </tr>
+                                <tr class="hover:bg-gray-50">
+                                    <td class="py-3 px-3">EM20260225003</td>
+                                    <td class="py-3 px-3">电气线路过热</td>
+                                    <td class="py-3 px-3">
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-danger/10 text-danger">
+                                            重大
+                                        </span>
+                                    </td>
+                                    <td class="py-3 px-3">12分钟 <span class="text-warning text-xs">↓</span></td>
+                                    <td class="py-3 px-3">全体运维人员</td>
+                                    <td class="py-3 px-3">
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-success/10 text-success">
+                                            成功处置
+                                        </span>
+                                    </td>
+                                    <td class="py-3 px-3 font-medium text-warning">80分</td>
+                                    <td class="py-3 px-3">
+                                        <button class="text-primary mr-2 hover:text-primary/80">详情</button>
+                                        <button class="text-gray-500 hover:text-primary">复盘</button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- 应急处置能力分析 -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="bg-emergency/5 rounded-lg p-4">
+                            <h4 class="font-medium mb-3 text-emergency">处置响应时效分析</h4>
+                            <div class="h-48">
+                                <canvas id="responseTimeChart"></canvas>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-emergency/5 rounded-lg p-4">
+                            <h4 class="font-medium mb-3 text-emergency">处置成功率统计</h4>
+                            <div class="h-48">
+                                <canvas id="successRateChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 能力提升建议 -->
+                    <div class="mt-6 bg-warning/5 rounded-lg p-4 border border-warning/20">
+                        <h4 class="font-medium mb-2 text-warning flex items-center">
+                            <i class="fa fa-lightbulb-o mr-2"></i> 应急处置能力提升建议
+                        </h4>
+                        <ul class="space-y-2 text-sm text-gray-700">
+                            <li class="flex items-start">
+                                <i class="fa fa-angle-right text-warning mt-1 mr-2"></i>
+                                <span>针对重大隐患响应时效超标问题，优化应急响应机制，缩短指令传达时间</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fa fa-angle-right text-warning mt-1 mr-2"></i>
+                                <span>加强赵新人等新员工的应急技能培训，重点提升初期火情扑救能力</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fa fa-angle-right text-warning mt-1 mr-2"></i>
+                                <span>增加实战演练频次，每月至少开展1次跨部门应急演练</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fa fa-angle-right text-warning mt-1 mr-2"></i>
+                                <span>完善应急处置流程文档，制作标准化操作手册并全员培训</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 4. 协同协作能力面板 -->
+        <section id="collaboration" class="mb-8">
+            <h2 class="text-xl font-bold mb-6 flex items-center text-collaboration">
+                <i class="fa fa-users mr-2"></i> 协同协作能力管理
+            </h2>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- 协作单位管理 -->
+                <div class="bg-white rounded-lg shadow-md p-4 lg:col-span-1">
+                    <h3 class="font-bold mb-4">协作单位管理</h3>
+                    
+                    <div class="space-y-4">
+                        <!-- 消防部门 -->
+                        <div class="border border-gray-100 rounded-lg p-3 card-hover">
+                            <div class="flex justify-between items-start mb-2">
+                                <div class="flex items-center">
+                                    <i class="fa fa-fire-extinguisher text-fire mr-2"></i>
+                                    <span class="font-medium">消防救援大队</span>
+                                </div>
+                                <span class="text-xs bg-success/10 text-success px-2 py-0.5 rounded">已对接</span>
+                            </div>
+                            <div class="text-sm text-gray-600 space-y-1 mb-3">
+                                <div><i class="fa fa-user text-gray-400 mr-1"></i> 对接人：刘队长</div>
+                                <div><i class="fa fa-phone text-gray-400 mr-1"></i> 联系方式：138****8888</div>
+                                <div><i class="fa fa-calendar text-gray-400 mr-1"></i> 上次演练：2026-02-15</div>
+                            </div>
+                            <div class="flex space-x-2">
+                                <button class="flex-1 text-sm bg-collaboration/10 text-collaboration rounded py-1 hover:bg-collaboration/20 transition-colors">
+                                    <i class="fa fa-phone mr-1"></i> 联系
+                                </button>
+                                <button class="flex-1 text-sm bg-gray-100 text-gray-700 rounded py-1 hover:bg-gray-200 transition-colors">
+                                    <i class="fa fa-file-text mr-1"></i> 记录
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- 微型消防站 -->
+                        <div class="border border-gray-100 rounded-lg p-3 card-hover">
+                            <div class="flex justify-between items-start mb-2">
+                                <div class="flex items-center">
+                                    <i class="fa fa-home text-primary mr-2"></i>
+                                    <span class="font-medium">园区微型消防站</span>
+                                </div>
+                                <span class="text-xs bg-success/10 text-success px-2 py-0.5 rounded">已对接</span>
+                            </div>
+                            <div class="text-sm text-gray-600 space-y-1 mb-3">
+                                <div><i class="fa fa-user text-gray-400 mr-1"></i> 对接人：张站长</div>
+                                <div><i class="fa fa-phone text-gray-400 mr-1"></i> 联系方式：139****9999</div>
+                                <div><i class="fa fa-calendar text-gray-400 mr-1"></i> 上次演练：2026-02-20</div>
+                            </div>
+                            <div class="flex space-x-2">
+                                <button class="flex-1 text-sm bg-collaboration/10 text-collaboration rounded py-1 hover:bg-collaboration/20 transition-colors">
+                                    <i class="fa fa-phone mr-1"></i> 联系
+                                </button>
+                                <button class="flex-1 text-sm bg-gray-100 text-gray-700 rounded py-1 hover:bg-gray-200 transition-colors">
+                                    <i class="fa fa-file-text mr-1"></i> 记录
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- 园区管理方 -->
+                        <div class="border border-gray-100 rounded-lg p-3 card-hover">
+                            <div class="flex justify-between items-start mb-2">
+                                <div class="flex items-center">
+                                    <i class="fa fa-building text-gray-600 mr-2"></i>
+                                    <span class="font-medium">园区管理委员会</span>
+                                </div>
+                                <span class="text-xs bg-success/10 text-success px-2 py-0.5 rounded">已对接</span>
+                            </div>
+                            <div class="text-sm text-gray-600 space-y-1 mb-3">
+                                <div><i class="fa fa-user text-gray-400 mr-1"></i> 对接人：王主任</div>
+                                <div><i class="fa fa-phone text-gray-400 mr-1"></i> 联系方式：137****7777</div>
+                                <div><i class="fa fa-calendar text-gray-400 mr-1"></i> 上次会议：2026-02-25</div>
+                            </div>
+                            <div class="flex space-x-2">
+                                <button class="flex-1 text-sm bg-collaboration/10 text-collaboration rounded py-1 hover:bg-collaboration/20 transition-colors">
+                                    <i class="fa fa-phone mr-1"></i> 联系
+                                </button>
+                                <button class="flex-1 text-sm bg-gray-100 text-gray-700 rounded py-1 hover:bg-gray-200 transition-colors">
+                                    <i class="fa fa-file-text mr-1"></i> 记录
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- 社区管理处 -->
+                        <div class="border border-gray-100 rounded-lg p-3 card-hover">
+                            <div class="flex justify-between items-start mb-2">
+                                <div class="flex items-center">
+                                    <i class="fa fa-users text-gray-600 mr-2"></i>
+                                    <span class="font-medium">社区管理处</span>
+                                </div>
+                                <span class="text-xs bg-warning/10 text-warning px-2 py-0.5 rounded">待完善</span>
+                            </div>
+                            <div class="text-sm text-gray-600 space-y-1 mb-3">
+                                <div><i class="fa fa-user text-gray-400 mr-1"></i> 对接人：待确定</div>
+                                <div><i class="fa fa-phone text-gray-400 mr-1"></i> 联系方式：待收集</div>
+                                <div><i class="fa fa-calendar text-gray-400 mr-1"></i> 对接状态：未完成</div>
+                            </div>
+                            <div class="flex space-x-2">
+                                <button class="flex-1 text-sm bg-warning/10 text-warning rounded py-1 hover:bg-warning/20 transition-colors">
+                                    <i class="fa fa-plus mr-1"></i> 新增
+                                </button>
+                                <button class="flex-1 text-sm bg-gray-100 text-gray-700 rounded py-1 hover:bg-gray-200 transition-colors">
+                                    <i class="fa fa-clock-o mr-1"></i> 待办
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button class="w-full mt-4 border border-dashed border-gray-300 rounded p-3 text-gray-500 hover:bg-gray-50 transition-colors flex items-center justify-center">
+                        <i class="fa fa-plus mr-2"></i> 添加协作单位
+                    </button>
+                </div>
+                
+                <!-- 协作记录与演练管理 -->
+                <div class="bg-white rounded-lg shadow-md p-4 lg:col-span-2">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-bold">协同协作记录与演练管理</h3>
+                        <div class="flex space-x-2">
+                            <button class="bg-collaboration/10 text-collaboration rounded px-3 py-1 text-sm hover:bg-collaboration/20 transition-colors">协作记录</button>
+                            <button class="bg-primary/10 text-primary rounded px-3 py-1 text-sm hover:bg-primary/20 transition-colors">演练计划</button>
+                            <button class="bg-gray-100 text-gray-700 rounded px-3 py-1 text-sm hover:bg-gray-200 transition-colors">能力评估</button>
+                        </div>
+                    </div>
+                    
+                    <!-- 跨部门演练计划 -->
+                    <div class="mb-6 bg-collaboration/5 rounded-lg p-4">
+                        <h4 class="font-medium mb-3 text-collaboration flex items-center">
+                            <i class="fa fa-calendar-check-o mr-2"></i> 跨部门协同演练计划
+                        </h4>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <!-- 月度综合演练 -->
+                            <div class="border border-gray-100 rounded-lg p-3 bg-white card-hover">
+                                <div class="flex justify-between mb-2">
+                                    <span class="font-medium">月度综合应急演练</span>
+                                    <span class="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded">计划中</span>
+                                </div>
+                                <div class="text-sm text-gray-600 space-y-1 mb-3">
+                                    <div><i class="fa fa-calendar text-gray-400 mr-1"></i> 演练时间：2026-03-20 14:00-17:00</div>
+                                    <div><i class="fa fa-users text-gray-400 mr-1"></i> 参与单位：运维团队、消防大队、微型消防站</div>
+                                    <div><i class="fa fa-list text-gray-400 mr-1"></i> 演练内容：火情应急处置、多部门协同配合</div>
+                                    <div><i class="fa fa-map-marker text-gray-400 mr-1"></i> 演练地点：园区消防演练场</div>
+                                </div>
+                                <div class="flex space-x-2">
+                                    <button class="flex-1 text-sm bg-primary text-white rounded py-1 hover:bg-primary/90 transition-colors">
+                                        查看详情
+                                    </button>
+                                    <button class="text-sm border border-gray-200 rounded py-1 px-2 hover:bg-gray-50 transition-colors">
+                                        <i class="fa fa-bell text-gray-600 mr-1"></i> 提醒
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- 季度联合演练 -->
+                            <div class="border border-gray-100 rounded-lg p-3 bg-white card-hover">
+                                <div class="flex justify-between mb-2">
+                                    <span class="font-medium">季度联合应急演练</span>
+                                    <span class="text-xs bg-warning/10 text-warning px-2 py-0.5 rounded">待安排</span>
+                                </div>
+                                <div class="text-sm text-gray-600 space-y-1 mb-3">
+                                    <div><i class="fa fa-calendar text-gray-400 mr-1"></i> 演练时间：2026-03-30（暂定）</div>
+                                    <div><i class="fa fa-users text-gray-400 mr-1"></i> 参与单位：运维团队、消防大队、园区管理、社区</div>
+                                    <div><i class="fa fa-list text-gray-400 mr-1"></i> 演练内容：重大火情应急响应、多部门联动处置</div>
+                                    <div><i class="fa fa-map-marker text-gray-400 mr-1"></i> 演练地点：待确定</div>
+                                </div>
+                                <div class="flex space-x-2">
+                                    <button class="flex-1 text-sm bg-warning/10 text-warning rounded py-1 hover:bg-warning/20 transition-colors">
+                                        安排演练
+                                    </button>
+                                    <button class="text-sm border border-gray-200 rounded py-1 px-2 hover:bg-gray-50 transition-colors">
+                                        <i class="fa fa-share-alt text-gray-600 mr-1"></i> 通知
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 协作记录列表 -->
+                        <div class="overflow-x-auto mb-6">
+                            <table class="w-full text-sm">
+                                <thead>
+                                    <tr class="border-b border-gray-200 bg-gray-50">
+                                        <th class="text-left py-3 px-3 font-medium">记录编号</th>
+                                        <th class="text-left py-3 px-3 font-medium">协作类型</th>
+                                        <th class="text-left py-3 px-3 font-medium">协作单位</th>
+                                        <th class="text-left py-3 px-3 font-medium">协作内容</th>
+                                        <th class="text-left py-3 px-3 font-medium">日期</th>
+                                        <th class="text-left py-3 px-3 font-medium">协作效果</th>
+                                        <th class="text-left py-3 px-3 font-medium">操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr class="border-b border-gray-100 hover:bg-gray-50">
+                                        <td class="py-3 px-3">CO20260220001</td>
+                                        <td class="py-3 px-3">应急演练</td>
+                                        <td class="py-3 px-3">消防救援大队</td>
+                                        <td class="py-3 px-3">火情应急处置协同演练</td>
+                                        <td class="py-3 px-3">2026-02-20</td>
+                                        <td class="py-3 px-3">
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-success/10 text-success">
+                                                良好
+                                            </span>
+                                        </td>
+                                        <td class="py-3 px-3">
+                                            <button class="text-primary hover:text-primary/80">查看记录</button>
+                                        </td>
+                                    </tr>
+                                    <tr class="border-b border-gray-100 hover:bg-gray-50">
+                                        <td class="py-3 px-3">CO20260215002</td>
+                                        <td class="py-3 px-3">数据同步</td>
+                                        <td class="py-3 px-3">园区微型消防站</td>
+                                        <td class="py-3 px-3">智慧消防平台数据对接</td>
+                                        <td class="py-3 px-3">2026-02-15</td>
+                                        <td class="py-3 px-3">
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-primary/10 text-primary">
+                                                优秀
+                                            </span>
+                                        </td>
+                                        <td class="py-3 px-3">
+                                            <button class="text-primary hover:text-primary/80">查看记录</button>
+                                        </td>
+                                    </tr>
+                                    <tr class="border-b border-gray-100 hover:bg-gray-50">
+                                        <td class="py-3 px-3">CO20260210003</td>
+                                        <td class="py-3 px-3">工作会议</td>
+                                        <td class="py-3 px-3">园区管理委员会</td>
+                                        <td class="py-3 px-3">季度运维工作协调会</td>
+                                        <td class="py-3 px-3">2026-02-10</td>
+                                        <td class="py-3 px-3">
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-primary/10 text-primary">
+                                                优秀
+                                            </span>
+                                        </td>
+                                        <td class="py-3 px-3">
+                                            <button class="text-primary hover:text-primary/80">查看记录</button>
+                                        </td>
+                                    </tr>
+                                    <tr class="hover:bg-gray-50">
+                                        <td class="py-3 px-3">CO20260205004</td>
+                                        <td class="py-3 px-3">应急处置</td>
+                                        <td class="py-3 px-3">消防救援大队</td>
+                                        <td class="py-3 px-3">园区火情应急处置配合</td>
+                                        <td class="py-3 px-3">2026-02-05</td>
+                                        <td class="py-3 px-3">
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-warning/10 text-warning">
+                                                待提升
+                                            </span>
+                                        </td>
+                                        <td class="py-3 px-3">
+                                            <button class="text-primary hover:text-primary/80">查看记录</button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <!-- 协同协作能力评估 -->
+                        <div class="bg-collaboration/5 rounded-lg p-4">
+                            <h4 class="font-medium mb-3 text-collaboration">协同协作能力评估</h4>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <div class="flex justify-between mb-1">
+                                        <span class="text-sm">信息同步及时性</span>
+                                        <span class="font-medium">85分</span>
+                                    </div>
+                                    <div class="progress-bar bg-gray-200 mb-3">
+                                        <div class="bg-collaboration" style="width: 85%"></div>
+                                    </div>
+                                    
+                                    <div class="flex justify-between mb-1">
+                                        <span class="text-sm">跨部门配合默契度</span>
+                                        <span class="font-medium">78分</span>
+                                    </div>
+                                    <div class="progress-bar bg-gray-200 mb-3">
+                                        <div class="bg-collaboration" style="width: 78%"></div>
+                                    </div>
+                                    
+                                    <div class="flex justify-between mb-1">
+                                        <span class="text-sm">演练参与积极性</span>
+                                        <span class="font-medium">65分</span>
+                                    </div>
+                                    <div class="progress-bar bg-gray-200 mb-3">
+                                        <div class="bg-collaboration" style="width: 65%"></div>
+                                    </div>
+                                </div>
+                                
+                                <div class="bg-white rounded-lg p-3 border border-gray-100">
+                                    <h5 class="font-medium text-sm mb-2">提升建议</h5>
+                                    <ul class="space-y-1 text-xs text-gray-700">
+                                        <li class="flex items-start">
+                                            <i class="fa fa-check-circle text-success mt-1 mr-1"></i>
+                                            <span>建立常态化信息同步机制，确保数据实时共享</span>
+                                        </li>
+                                        <li class="flex items-start">
+                                            <i

@@ -1,0 +1,1228 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>高层住宅火灾智慧预警系统 - 场景案例解析</title>
+    <!-- 引入Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入Font Awesome图标 -->
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <!-- 引入Chart.js图表库 -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+    
+    <!-- 自定义Tailwind配置 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#1890FF',       // 主色调-科技蓝
+                        success: '#52C41A',       // 成功绿
+                        warning: '#FAAD14',       // 警告黄
+                        danger: '#F5222D',        // 危险红
+                        info: '#40A9FF',          // 信息蓝
+                        smoke: '#7B68EE',         // 烟雾/误报主题色
+                        system: '#13C2C2',        // 系统故障主题色
+                        collaboration: '#FF7A45', // 跨区域协同主题色
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['Consolas', 'Monaco', 'monospace']
+                    },
+                }
+            }
+        }
+    </script>
+    
+    <!-- 自定义工具类 -->
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .card-hover {
+                transition: all 0.3s ease;
+            }
+            .card-hover:hover {
+                transform: translateY(-4px);
+                box-shadow: 0 12px 20px rgba(24, 144, 255, 0.1);
+            }
+            .timeline-item {
+                position: relative;
+                padding-left: 2rem;
+            }
+            .timeline-item::before {
+                content: '';
+                position: absolute;
+                left: 0.5rem;
+                top: 0.5rem;
+                width: 0.75rem;
+                height: 0.75rem;
+                border-radius: 50%;
+                background-color: #1890FF;
+                z-index: 10;
+            }
+            .timeline-item::after {
+                content: '';
+                position: absolute;
+                left: 0.8125rem;
+                top: 1.25rem;
+                bottom: -1rem;
+                width: 0.125rem;
+                background-color: #E5E7EB;
+            }
+            .timeline-item:last-child::after {
+                display: none;
+            }
+            .stat-card {
+                background: linear-gradient(135deg, rgba(24, 144, 255, 0.05) 0%, rgba(24, 144, 255, 0.1) 100%);
+                border: 1px solid rgba(24, 144, 255, 0.1);
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans text-gray-800">
+    <!-- 顶部导航栏 -->
+    <header class="bg-white shadow-md sticky top-0 z-50">
+        <div class="container mx-auto px-4 py-4 flex flex-col md:flex-row items-center justify-between">
+            <div class="flex items-center space-x-3 mb-3 md:mb-0">
+                <div class="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                    <i class="fa fa-fire-extinguisher text-primary text-2xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl md:text-2xl font-bold text-gray-800">高层住宅火灾智慧预警系统</h1>
+                    <p class="text-sm text-gray-500">多场景案例解析 · 落地实效评估 · 应对策略优化</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center space-x-4">
+                <!-- 系统状态 -->
+                <div class="flex items-center bg-primary/5 rounded-full px-4 py-2">
+                    <div class="w-3 h-3 rounded-full bg-success animate-pulse mr-2"></div>
+                    <span class="text-sm font-medium text-primary">系统运行状态：正常</span>
+                </div>
+                
+                <!-- 快捷操作 -->
+                <button class="bg-primary hover:bg-primary/90 text-white rounded-full px-4 py-2 text-sm flex items-center transition-colors">
+                    <i class="fa fa-download mr-2"></i> 下载案例报告
+                </button>
+            </div>
+        </div>
+        
+        <!-- 二级导航 -->
+        <nav class="border-t border-gray-100 px-4 py-3">
+            <div class="container mx-auto flex space-x-6 overflow-x-auto scrollbar-hide">
+                <a href="#overview" class="tab-active px-2 py-1 whitespace-nowrap flex items-center">
+                    <i class="fa fa-dashboard mr-1"></i> 系统总览
+                </a>
+                <a href="#case1" class="text-gray-600 hover:text-primary px-2 py-1 whitespace-nowrap flex items-center transition-colors">
+                    <i class="fa fa-home mr-1"></i> 误报率优化案例
+                </a>
+                <a href="#case2" class="text-gray-600 hover:text-primary px-2 py-1 whitespace-nowrap flex items-center transition-colors">
+                    <i class="fa fa-exclamation-triangle mr-1"></i> 平台失效应急案例
+                </a>
+                <a href="#case3" class="text-gray-600 hover:text-primary px-2 py-1 whitespace-nowrap flex items-center transition-colors">
+                    <i class="fa fa-globe mr-1"></i> 跨区域协同案例
+                </a>
+                <a href="#strategy" class="text-gray-600 hover:text-primary px-2 py-1 whitespace-nowrap flex items-center transition-colors">
+                    <i class="fa fa-lightbulb-o mr-1"></i> 应对策略总结
+                </a>
+                <a href="#data" class="text-gray-600 hover:text-primary px-2 py-1 whitespace-nowrap flex items-center transition-colors">
+                    <i class="fa fa-bar-chart mr-1"></i> 数据成效分析
+                </a>
+            </div>
+        </nav>
+    </header>
+
+    <!-- 主要内容区域 -->
+    <main class="container mx-auto px-4 py-8">
+        <!-- 1. 系统总览面板 -->
+        <section id="overview" class="mb-10">
+            <h2 class="text-xl font-bold mb-6 flex items-center text-primary">
+                <i class="fa fa-dashboard mr-2"></i> 高层住宅火灾智慧预警系统总览
+            </h2>
+            
+            <!-- 核心数据卡片 -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <!-- 误报率优化 -->
+                <div class="bg-white rounded-lg shadow-md p-5 card-hover stat-card">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <p class="text-gray-500 text-sm">误报率优化成效</p>
+                            <h3 class="text-3xl font-bold mt-1 text-smoke">82<span class="text-xl">%</span></h3>
+                            <p class="text-xs text-success mt-1">较传统系统降低</p>
+                        </div>
+                        <div class="w-10 h-10 rounded-full bg-smoke/10 flex items-center justify-center text-smoke">
+                            <i class="fa fa-filter text-xl"></i>
+                        </div>
+                    </div>
+                    <div class="text-sm text-gray-600">
+                        <p>基于AI算法与住户行为建模</p>
+                    </div>
+                </div>
+                
+                <!-- 系统可靠性 -->
+                <div class="bg-white rounded-lg shadow-md p-5 card-hover stat-card">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <p class="text-gray-500 text-sm">系统应急保障率</p>
+                            <h3 class="text-3xl font-bold mt-1 text-system">99.5<span class="text-xl">%</span></h3>
+                            <p class="text-xs text-success mt-1">冗余设计+人工补位</p>
+                        </div>
+                        <div class="w-10 h-10 rounded-full bg-system/10 flex items-center justify-center text-system">
+                            <i class="fa fa-shield text-xl"></i>
+                        </div>
+                    </div>
+                    <div class="text-sm text-gray-600">
+                        <p>平台失效时应急响应机制</p>
+                    </div>
+                </div>
+                
+                <!-- 救援效率提升 -->
+                <div class="bg-white rounded-lg shadow-md p-5 card-hover stat-card">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <p class="text-gray-500 text-sm">救援效率提升</p>
+                            <h3 class="text-3xl font-bold mt-1 text-collaboration">40<span class="text-xl">%</span></h3>
+                            <p class="text-xs text-success mt-1">跨区域协同调度</p>
+                        </div>
+                        <div class="w-10 h-10 rounded-full bg-collaboration/10 flex items-center justify-center text-collaboration">
+                            <i class="fa fa-tachometer text-xl"></i>
+                        </div>
+                    </div>
+                    <div class="text-sm text-gray-600">
+                        <p>云端数据共享打破地域壁垒</p>
+                    </div>
+                </div>
+                
+                <!-- 覆盖楼栋数 -->
+                <div class="bg-white rounded-lg shadow-md p-5 card-hover stat-card">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <p class="text-gray-500 text-sm">已覆盖高层住宅</p>
+                            <h3 class="text-3xl font-bold mt-1 text-primary">286<span class="text-xl">栋</span></h3>
+                            <p class="text-xs text-primary mt-1">12个城区/社区</p>
+                        </div>
+                        <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                            <i class="fa fa-building text-xl"></i>
+                        </div>
+                    </div>
+                    <div class="text-sm text-gray-600">
+                        <p>智慧预警系统落地应用</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 核心场景概览 -->
+            <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+                <h3 class="font-bold text-lg mb-4 flex items-center text-primary">
+                    <i class="fa fa-map-signs mr-2"></i> 三大核心应用场景概览
+                </h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- 场景1：误报率优化 -->
+                    <div class="border border-smoke/20 rounded-lg p-4 bg-smoke/5 card-hover cursor-pointer" onclick="document.getElementById('case1').scrollIntoView({behavior: 'smooth'})">
+                        <div class="flex items-center mb-3">
+                            <div class="w-8 h-8 rounded-full bg-smoke/10 flex items-center justify-center text-smoke mr-3">
+                                <i class="fa fa-filter"></i>
+                            </div>
+                            <h4 class="font-medium text-smoke">场景一：误报率优化</h4>
+                        </div>
+                        <p class="text-sm text-gray-700 mb-3">
+                            某社区通过AI算法优化传感器数据筛选，结合住户行为特征建模，实现误报率降低82%，解决传统预警干扰问题。
+                        </p>
+                        <div class="flex justify-between items-center text-xs">
+                            <span class="text-gray-500">核心技术：AI算法 + 行为建模</span>
+                            <button class="text-smoke hover:text-smoke/80">查看详情 →</button>
+                        </div>
+                    </div>
+                    
+                    <!-- 场景2：平台失效应急 -->
+                    <div class="border border-system/20 rounded-lg p-4 bg-system/5 card-hover cursor-pointer" onclick="document.getElementById('case2').scrollIntoView({behavior: 'smooth'})">
+                        <div class="flex items-center mb-3">
+                            <div class="w-8 h-8 rounded-full bg-system/10 flex items-center justify-center text-system mr-3">
+                                <i class="fa fa-exclamation-triangle"></i>
+                            </div>
+                            <h4 class="font-medium text-system">场景二：平台失效应急</h4>
+                        </div>
+                        <p class="text-sm text-gray-700 mb-3">
+                            某城区系统故障事件中，通过备用监测模块启动、人工巡检补位的应急流程，保障预警系统基本功能。
+                        </p>
+                        <div class="flex justify-between items-center text-xs">
+                            <span class="text-gray-500">核心策略：冗余设计 + 应急演练</span>
+                            <button class="text-system hover:text-system/80">查看详情 →</button>
+                        </div>
+                    </div>
+                    
+                    <!-- 场景3：跨区域协同 -->
+                    <div class="border border-collaboration/20 rounded-lg p-4 bg-collaboration/5 card-hover cursor-pointer" onclick="document.getElementById('case3').scrollIntoView({behavior: 'smooth'})">
+                        <div class="flex items-center mb-3">
+                            <div class="w-8 h-8 rounded-full bg-collaboration/10 flex items-center justify-center text-collaboration mr-3">
+                                <i class="fa fa-globe"></i>
+                            </div>
+                            <h4 class="font-medium text-collaboration">场景三：跨区域协同</h4>
+                        </div>
+                        <p class="text-sm text-gray-700 mb-3">
+                            多市联合救援案例中，基于云端数据共享实现火情同步、资源调度，打破地域壁垒，提升救援效率。
+                        </p>
+                        <div class="flex justify-between items-center text-xs">
+                            <span class="text-gray-500">核心机制：云端共享 + 智能调度</span>
+                            <button class="text-collaboration hover:text-collaboration/80">查看详情 →</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 系统架构图 -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h3 class="font-bold text-lg mb-4 flex items-center text-primary">
+                    <i class="fa fa-sitemap mr-2"></i> 智慧预警系统整体架构
+                </h3>
+                
+                <div class="relative h-80 bg-gray-50 rounded-lg p-4 overflow-hidden">
+                    <!-- 架构可视化 -->
+                    <div class="grid grid-cols-4 grid-rows-3 gap-4 h-full">
+                        <!-- 感知层 -->
+                        <div class="col-span-4 bg-white border border-gray-200 rounded-lg p-3 flex items-center justify-center">
+                            <div class="text-center">
+                                <h4 class="font-medium text-primary">感知层</h4>
+                                <p class="text-xs text-gray-600 mt-1">烟感传感器 · 温感传感器 · 燃气传感器 · 视频监控</p>
+                            </div>
+                        </div>
+                        
+                        <!-- 传输层 -->
+                        <div class="col-span-4 bg-white border border-gray-200 rounded-lg p-3 flex items-center justify-center">
+                            <div class="text-center">
+                                <h4 class="font-medium text-primary">传输层</h4>
+                                <p class="text-xs text-gray-600 mt-1">5G · NB-IoT · LoRa · 光纤网络</p>
+                            </div>
+                        </div>
+                        
+                        <!-- 平台层 -->
+                        <div class="col-span-2 bg-white border border-gray-200 rounded-lg p-3 flex items-center justify-center">
+                            <div class="text-center">
+                                <h4 class="font-medium text-primary">平台层</h4>
+                                <p class="text-xs text-gray-600 mt-1">AI算法引擎 · 数据存储 · 预警分析 · 应急调度</p>
+                            </div>
+                        </div>
+                        
+                        <!-- 应用层 -->
+                        <div class="col-span-2 bg-white border border-gray-200 rounded-lg p-3 flex items-center justify-center">
+                            <div class="text-center">
+                                <h4 class="font-medium text-primary">应用层</h4>
+                                <p class="text-xs text-gray-600 mt-1">预警展示 · 应急指挥 · 数据分析 · 协同调度</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 架构连接线 -->
+                    <div class="absolute top-28 left-1/2 transform -translate-x-1/2 w-1/2 h-0.5 bg-primary/30"></div>
+                    <div class="absolute top-48 left-1/2 transform -translate-x-1/2 w-1/2 h-0.5 bg-primary/30"></div>
+                    <div class="absolute top-68 left-1/2 transform -translate-x-1/2 w-1/4 h-0.5 bg-primary/30"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2. 案例一：误报率优化案例 -->
+        <section id="case1" class="mb-10">
+            <h2 class="text-xl font-bold mb-6 flex items-center text-smoke">
+                <i class="fa fa-home mr-2"></i> 案例一：高层住宅误报率优化（某社区项目）
+            </h2>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- 案例背景与目标 -->
+                <div class="lg:col-span-1">
+                    <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                        <h3 class="font-bold text-lg mb-4 flex items-center text-smoke">
+                            <i class="fa fa-info-circle mr-2"></i> 案例背景
+                        </h3>
+                        <div class="space-y-4 text-gray-700">
+                            <div>
+                                <h4 class="font-medium text-gray-800 mb-2">项目概况</h4>
+                                <p class="text-sm">某高层住宅社区，共28栋高层住宅楼，住户约3200户，传统火灾预警系统存在严重误报问题。</p>
+                            </div>
+                            <div>
+                                <h4 class="font-medium text-gray-800 mb-2">核心痛点</h4>
+                                <ul class="list-disc list-inside text-sm space-y-1 ml-2">
+                                    <li>传统传感器数据单一，无法区分真实火情与日常活动</li>
+                                    <li>误报率高达35%，严重干扰住户生活和消防资源调配</li>
+                                    <li>住户对预警系统信任度低，出现"狼来了"效应</li>
+                                    <li>消防出警成本高，无效出警占比达40%</li>
+                                </ul>
+                            </div>
+                            <div>
+                                <h4 class="font-medium text-gray-800 mb-2">优化目标</h4>
+                                <p class="text-sm">通过智慧化改造，将误报率降低80%以上，提升预警准确性和住户满意度。</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 关键技术指标 -->
+                    <div class="bg-white rounded-lg shadow-md p-6">
+                        <h3 class="font-bold text-lg mb-4 flex items-center text-smoke">
+                            <i class="fa fa-bar-chart mr-2"></i> 优化成效
+                        </h3>
+                        <div class="space-y-4">
+                            <div>
+                                <div class="flex justify-between mb-1">
+                                    <span class="text-sm font-medium">误报率降低</span>
+                                    <span class="text-success font-bold">82%</span>
+                                </div>
+                                <div class="h-2 bg-gray-200 rounded-full overflow-hidden">
+                                    <div class="h-full bg-smoke rounded-full" style="width: 82%"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between mb-1">
+                                    <span class="text-sm font-medium">住户满意度提升</span>
+                                    <span class="text-success font-bold">75%</span>
+                                </div>
+                                <div class="h-2 bg-gray-200 rounded-full overflow-hidden">
+                                    <div class="h-full bg-smoke rounded-full" style="width: 75%"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between mb-1">
+                                    <span class="text-sm font-medium">无效出警减少</span>
+                                    <span class="text-success font-bold">88%</span>
+                                </div>
+                                <div class="h-2 bg-gray-200 rounded-full overflow-hidden">
+                                    <div class="h-full bg-smoke rounded-full" style="width: 88%"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between mb-1">
+                                    <span class="text-sm font-medium">预警响应时间</span>
+                                    <span class="text-success font-bold">缩短60%</span>
+                                </div>
+                                <div class="h-2 bg-gray-200 rounded-full overflow-hidden">
+                                    <div class="h-full bg-smoke rounded-full" style="width: 60%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 解决方案与实施流程 -->
+                <div class="lg:col-span-2">
+                    <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                        <h3 class="font-bold text-lg mb-4 flex items-center text-smoke">
+                            <i class="fa fa-cogs mr-2"></i> 核心解决方案
+                        </h3>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                            <!-- AI算法优化 -->
+                            <div class="border border-smoke/20 rounded-lg p-4 bg-smoke/5">
+                                <h4 class="font-medium text-smoke mb-3 flex items-center">
+                                    <i class="fa fa-brain mr-2"></i> AI算法优化传感器数据筛选
+                                </h4>
+                                <ul class="list-disc list-inside text-sm text-gray-700 space-y-2 ml-2">
+                                    <li>多维度数据融合：烟雾浓度、温度、湿度、CO浓度</li>
+                                    <li>动态阈值调整：根据季节、时段、天气自动调整预警阈值</li>
+                                    <li>异常数据识别：识别传感器故障导致的虚假数据</li>
+                                    <li>边缘计算处理：本地实时分析，减少传输延迟</li>
+                                </ul>
+                            </div>
+                            
+                            <!-- 住户行为特征建模 -->
+                            <div class="border border-smoke/20 rounded-lg p-4 bg-smoke/5">
+                                <h4 class="font-medium text-smoke mb-3 flex items-center">
+                                    <i class="fa fa-users mr-2"></i> 住户行为特征建模
+                                </h4>
+                                <ul class="list-disc list-inside text-sm text-gray-700 space-y-2 ml-2">
+                                    <li>日常活动模式识别：烹饪、吸烟、焚香等产生烟雾的行为</li>
+                                    <li>时间特征分析：早中晚餐时段、节假日等高发误报时段</li>
+                                    <li>住户画像构建：老人、儿童、烹饪爱好者等特殊群体</li>
+                                    <li>行为异常检测：非日常时段的烟雾产生视为高风险</li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <!-- 实施流程 -->
+                        <h4 class="font-medium text-gray-800 mb-3">实施流程</h4>
+                        <div class="relative pl-8 pb-4">
+                            <div class="timeline-item mb-6">
+                                <h5 class="font-medium">第一阶段：数据采集与分析（1-2个月）</h5>
+                                <p class="text-sm text-gray-700 mt-1">收集3个月的历史预警数据，分析误报规律和特征，建立基础数据库。</p>
+                            </div>
+                            <div class="timeline-item mb-6">
+                                <h5 class="font-medium">第二阶段：算法模型训练（2-3个月）</h5>
+                                <p class="text-sm text-gray-700 mt-1">基于历史数据训练AI模型，优化特征提取和分类算法，构建行为特征库。</p>
+                            </div>
+                            <div class="timeline-item mb-6">
+                                <h5 class="font-medium">第三阶段：系统改造与部署（1个月）</h5>
+                                <p class="text-sm text-gray-700 mt-1">升级传感器硬件，部署边缘计算节点，接入智慧预警平台。</p>
+                            </div>
+                            <div class="timeline-item">
+                                <h5 class="font-medium">第四阶段：试运行与调优（1-2个月）</h5>
+                                <p class="text-sm text-gray-700 mt-1">系统试运行，持续收集反馈，优化算法参数，最终达到预期效果。</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 效果对比图表 -->
+                    <div class="bg-white rounded-lg shadow-md p-6">
+                        <h3 class="font-bold text-lg mb-4 flex items-center text-smoke">
+                            <i class="fa fa-line-chart mr-2"></i> 误报率优化效果对比
+                        </h3>
+                        <div class="h-72">
+                            <canvas id="falseAlarmChart"></canvas>
+                        </div>
+                        <div class="mt-4 text-sm text-gray-600">
+                            <p><strong>数据说明：</strong> 蓝色曲线代表传统系统误报率，紫色曲线代表智慧系统误报率，优化效果显著，误报率从35%降至6.3%，降幅达82%。</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. 案例二：平台失效应急案例 -->
+        <section id="case2" class="mb-10">
+            <h2 class="text-xl font-bold mb-6 flex items-center text-system">
+                <i class="fa fa-exclamation-triangle mr-2"></i> 案例二：智慧消防平台失效应急（某城区系统故障）
+            </h2>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- 案例背景与故障分析 -->
+                <div class="lg:col-span-1">
+                    <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                        <h3 class="font-bold text-lg mb-4 flex items-center text-system">
+                            <i class="fa fa-info-circle mr-2"></i> 案例背景
+                        </h3>
+                        <div class="space-y-4 text-gray-700">
+                            <div>
+                                <h4 class="font-medium text-gray-800 mb-2">故障事件概况</h4>
+                                <p class="text-sm">某城区智慧消防预警平台因服务器集群故障，导致约2小时的系统瘫痪，影响覆盖范围内86栋高层建筑的实时监测功能。</p>
+                            </div>
+                            <div>
+                                <h4 class="font-medium text-gray-800 mb-2">故障原因分析</h4>
+                                <ul class="list-disc list-inside text-sm space-y-1 ml-2">
+                                    <li>核心数据库服务器硬件故障</li>
+                                    <li>备用服务器自动切换机制失效</li>
+                                    <li>网络传输链路单点故障</li>
+                                    <li>应急预案执行不到位</li>
+                                </ul>
+                            </div>
+                            <div>
+                                <h4 class="font-medium text-gray-800 mb-2">潜在风险</h4>
+                                <p class="text-sm">系统失效期间，无法实时监测火情数据，可能导致火灾预警延迟，增加高层住宅火灾风险。</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 应急处置成效 -->
+                    <div class="bg-white rounded-lg shadow-md p-6">
+                        <h3 class="font-bold text-lg mb-4 flex items-center text-system">
+                            <i class="fa fa-check-circle mr-2"></i> 应急处置成效
+                        </h3>
+                        <div class="space-y-4">
+                            <div class="flex items-center">
+                                <div class="w-12 h-12 rounded-full bg-success/10 flex items-center justify-center text-success mr-4">
+                                    <span class="font-bold">0</span>
+                                </div>
+                                <div>
+                                    <h4 class="font-medium text-gray-800">火灾事故发生</h4>
+                                    <p class="text-xs text-gray-600">系统失效期间无任何火灾事故</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center">
+                                <div class="w-12 h-12 rounded-full bg-success/10 flex items-center justify-center text-success mr-4">
+                                    <span class="font-bold">18</span>
+                                </div>
+                                <div>
+                                    <h4 class="font-medium text-gray-800">人工巡检覆盖楼栋</h4>
+                                    <p class="text-xs text-gray-600">重点楼栋全覆盖</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center">
+                                <div class="w-12 h-12 rounded-full bg-success/10 flex items-center justify-center text-success mr-4">
+                                    <span class="font-bold">45</span>
+                                </div>
+                                <div>
+                                    <h4 class="font-medium text-gray-800">分钟级系统恢复</h4>
+                                    <p class="text-xs text-gray-600">较原计划缩短75分钟</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center">
+                                <div class="w-12 h-12 rounded-full bg-warning/10 flex items-center justify-center text-warning mr-4">
+                                    <span class="font-bold">95</span>
+                                </div>
+                                <div>
+                                    <h4 class="font-medium text-gray-800">系统可靠性评分</h4>
+                                    <p class="text-xs text-gray-600">需进一步提升至99.9%</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 应急处置流程与改进措施 -->
+                <div class="lg:col-span-2">
+                    <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                        <h3 class="font-bold text-lg mb-4 flex items-center text-system">
+                            <i class="fa fa-ambulance mr-2"></i> 应急处置流程
+                        </h3>
+                        
+                        <!-- 应急响应时间轴 -->
+                        <div class="relative pl-8 pb-4 mb-6">
+                            <div class="timeline-item mb-6">
+                                <h5 class="font-medium">09:15 故障发现</h5>
+                                <p class="text-sm text-gray-700 mt-1">系统监控人员发现平台数据更新异常，初步判定服务器故障。</p>
+                                <div class="mt-2 text-xs bg-warning/10 text-warning px-2 py-1 rounded inline-block">
+                                    <i class="fa fa-bell mr-1"></i> 启动一级应急响应
+                                </div>
+                            </div>
+                            <div class="timeline-item mb-6">
+                                <h5 class="font-medium">09:20 备用模块启动</h5>
+                                <p class="text-sm text-gray-700 mt-1">技术团队手动启动备用监测模块，恢复基础预警功能。</p>
+                                <div class="mt-2 text-xs bg-info/10 text-info px-2 py-1 rounded inline-block">
+                                    <i class="fa fa-server mr-1"></i> 备用系统上线
+                                </div>
+                            </div>
+                            <div class="timeline-item mb-6">
+                                <h5 class="font-medium">09:30 人工巡检部署</h5>
+                                <p class="text-sm text-gray-700 mt-1">应急小组分批次对重点楼栋进行人工巡检，每30分钟上报一次情况。</p>
+                                <div class="mt-2 text-xs bg-primary/10 text-primary px-2 py-1 rounded inline-block">
+                                    <i class="fa fa-users mr-1"></i> 巡检队伍出动
+                                </div>
+                            </div>
+                            <div class="timeline-item mb-6">
+                                <h5 class="font-medium">10:00 故障定位修复</h5>
+                                <p class="text-sm text-gray-700 mt-1">技术团队定位数据库服务器硬件故障，完成更换和系统恢复。</p>
+                                <div class="mt-2 text-xs bg-success/10 text-success px-2 py-1 rounded inline-block">
+                                    <i class="fa fa-wrench mr-1"></i> 故障修复完成
+                                </div>
+                            </div>
+                            <div class="timeline-item">
+                                <h5 class="font-medium">10:15 系统全面恢复</h5>
+                                <p class="text-sm text-gray-700 mt-1">主系统恢复运行，备用系统作为冗余继续运行，完成数据同步和校验。</p>
+                                <div class="mt-2 text-xs bg-success/10 text-success px-2 py-1 rounded inline-block">
+                                    <i class="fa fa-check mr-1"></i> 应急响应结束
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 改进措施 -->
+                        <h4 class="font-medium text-gray-800 mb-3">核心改进措施</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="border border-system/20 rounded-lg p-4 bg-system/5">
+                                <h5 class="font-medium text-system mb-2 flex items-center">
+                                    <i class="fa fa-shield mr-2"></i> 平台冗余设计
+                                </h5>
+                                <ul class="list-disc list-inside text-sm text-gray-700 space-y-1 ml-2">
+                                    <li>部署双活数据中心，实现秒级切换</li>
+                                    <li>关键服务器集群化部署，避免单点故障</li>
+                                    <li>建立异地灾备系统，应对极端情况</li>
+                                    <li>网络链路多运营商备份</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="border border-system/20 rounded-lg p-4 bg-system/5">
+                                <h5 class="font-medium text-system mb-2 flex items-center">
+                                    <i class="fa fa-fire-extinguisher mr-2"></i> 应急演练强化
+                                </h5>
+                                <ul class="list-disc list-inside text-sm text-gray-700 space-y-1 ml-2">
+                                    <li>每月开展系统故障应急演练</li>
+                                    <li>每季度开展跨部门联合应急演练</li>
+                                    <li>建立应急响应考核机制</li>
+                                    <li>完善应急预案和操作手册</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 系统可靠性提升方案 -->
+                    <div class="bg-white rounded-lg shadow-md p-6">
+                        <h3 class="font-bold text-lg mb-4 flex items-center text-system">
+                            <i class="fa fa-line-chart mr-2"></i> 系统可靠性提升方案
+                        </h3>
+                        <div class="h-72">
+                            <canvas id="systemReliabilityChart"></canvas>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+                            <div class="border border-gray-200 rounded-lg p-4 text-center">
+                                <div class="text-2xl font-bold text-success mb-1">99.9%</div>
+                                <div class="text-sm text-gray-700">目标系统可用性</div>
+                            </div>
+                            <div class="border border-gray-200 rounded-lg p-4 text-center">
+                                <div class="text-2xl font-bold text-primary mb-1">5分钟</div>
+                                <div class="text-sm text-gray-700">故障响应时间</div>
+                            </div>
+                            <div class="border border-gray-200 rounded-lg p-4 text-center">
+                                <div class="text-2xl font-bold text-info mb-1">30分钟</div>
+                                <div class="text-sm text-gray-700">系统恢复时间</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 4. 案例三：跨区域协同案例 -->
+        <section id="case3" class="mb-10">
+            <h2 class="text-xl font-bold mb-6 flex items-center text-collaboration">
+                <i class="fa fa-globe mr-2"></i> 案例三：跨区域协同救援（多市联合救援）
+            </h2>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- 案例背景与挑战 -->
+                <div class="lg:col-span-1">
+                    <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                        <h3 class="font-bold text-lg mb-4 flex items-center text-collaboration">
+                            <i class="fa fa-info-circle mr-2"></i> 案例背景
+                        </h3>
+                        <div class="space-y-4 text-gray-700">
+                            <div>
+                                <h4 class="font-medium text-gray-800 mb-2">救援事件概况</h4>
+                                <p class="text-sm">某超高层住宅小区发生火灾，火势蔓延迅速，本地消防资源不足，需周边3个城市消防力量支援，涉及跨区域协同救援。</p>
+                            </div>
+                            <div>
+                                <h4 class="font-medium text-gray-800 mb-2">传统救援痛点</h4>
+                                <ul class="list-disc list-inside text-sm space-y-1 ml-2">
+                                    <li>火情信息传递不及时、不准确</li>
+                                    <li>跨区域资源调度效率低下</li>
+                                    <li>救援力量协同配合难度大</li>
+                                    <li>指挥体系不统一，信息孤岛严重</li>
+                                </ul>
+                            </div>
+                            <div>
+                                <h4 class="font-medium text-gray-800 mb-2">智慧化解决方案价值</h4>
+                                <p class="text-sm">基于云端数据共享的智慧协同平台，实现火情实时同步、资源智能调度，救援效率提升40%。</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 协同救援成效 -->
+                    <div class="bg-white rounded-lg shadow-md p-6">
+                        <h3 class="font-bold text-lg mb-4 flex items-center text-collaboration">
+                            <i class="fa fa-trophy mr-2"></i> 协同救援成效
+                        </h3>
+                        <div class="space-y-5">
+                            <div>
+                                <div class="flex justify-between mb-1">
+                                    <span class="text-sm font-medium">救援响应时间缩短</span>
+                                    <span class="text-success font-bold">40%</span>
+                                </div>
+                                <div class="h-2 bg-gray-200 rounded-full overflow-hidden">
+                                    <div class="h-full bg-collaboration rounded-full" style="width: 40%"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between mb-1">
+                                    <span class="text-sm font-medium">资源调度准确率</span>
+                                    <span class="text-success font-bold">98%</span>
+                                </div>
+                                <div class="h-2 bg-gray-200 rounded-full overflow-hidden">
+                                    <div class="h-full bg-collaboration rounded-full" style="width: 98%"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between mb-1">
+                                    <span class="text-sm font-medium">信息同步实时性</span>
+                                    <span class="text-success font-bold">99%</span>
+                                </div>
+                                <div class="h-2 bg-gray-200 rounded-full overflow-hidden">
+                                    <div class="h-full bg-collaboration rounded-full" style="width: 99%"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between mb-1">
+                                    <span class="text-sm font-medium">救援效率提升</span>
+                                    <span class="text-success font-bold">45%</span>
+                                </div>
+                                <div class="h-2 bg-gray-200 rounded-full overflow-hidden">
+                                    <div class="h-full bg-collaboration rounded-full" style="width: 45%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 协同机制与实施流程 -->
+                <div class="lg:col-span-2">
+                    <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                        <h3 class="font-bold text-lg mb-4 flex items-center text-collaboration">
+                            <i class="fa fa-sitemap mr-2"></i> 跨区域协同核心机制
+                        </h3>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                            <!-- 云端数据共享 -->
+                            <div class="border border-collaboration/20 rounded-lg p-4 bg-collaboration/5">
+                                <h4 class="font-medium text-collaboration mb-3 flex items-center">
+                                    <i class="fa fa-cloud mr-2"></i> 云端数据共享机制
+                                </h4>
+                                <ul class="list-disc list-inside text-sm text-gray-700 space-y-2 ml-2">
+                                    <li>火情实时数据：温度、烟雾、视频等多维度信息</li>
+                                    <li>建筑结构数据：楼层分布、消防通道、避难层位置</li>
+                                    <li>人员分布数据：住户信息、被困人员定位</li>
+                                    <li>救援资源数据：各区域消防力量、装备、物资</li>
+                                </ul>
+                            </div>
+                            
+                            <!-- 智能资源调度 -->
+                            <div class="border border-collaboration/20 rounded-lg p-4 bg-collaboration/5">
+                                <h4 class="font-medium text-collaboration mb-3 flex items-center">
+                                    <i class="fa fa-truck mr-2"></i> 智能资源调度机制
+                                </h4>
+                                <ul class="list-disc list-inside text-sm text-gray-700 space-y-2 ml-2">
+                                    <li>基于火情等级自动匹配救援力量</li>
+                                    <li>最优路径规划，避开拥堵路段</li>
+                                    <li>装备物资智能调配，避免重复调配</li>
+                                    <li>实时监控救援力量到达进度</li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <!-- 协同救援流程 -->
+                        <h4 class="font-medium text-gray-800 mb-3">跨区域协同救援流程</h4>
+                        <div class="relative pl-8 pb-4">
+                            <div class="timeline-item mb-6">
+                                <h5 class="font-medium">第一步：火情上报与定级</h5>
+                                <p class="text-sm text-gray-700 mt-1">智慧预警系统自动上报火情，AI算法评估火情等级，启动相应级别的救援响应。</p>
+                            </div>
+                            <div class="timeline-item mb-6">
+                                <h5 class="font-medium">第二步：云端数据同步</h5>
+                                <p class="text-sm text-gray-700 mt-1">火情数据、建筑数据、人员数据实时同步至跨区域协同平台，所有授权救援单位可查看。</p>
+                            </div>
+                            <div class="timeline-item mb-6">
+                                <h5 class="font-medium">第三步：资源智能调度</h5>
+                                <p class="text-sm text-gray-700 mt-1">系统根据火情等级和资源分布，自动调度周边区域消防力量、装备和物资。</p>
+                            </div>
+                            <div class="timeline-item mb-6">
+                                <h5 class="font-medium">第四步：多部门协同作战</h5>
+                                <p class="text-sm text-gray-700 mt-1">建立统一指挥体系，各救援力量协同配合，实时共享救援进展和需求。</p>
+                            </div>
+                            <div class="timeline-item">
+                                <h5 class="font-medium">第五步：救援效果评估</h5>
+                                <p class="text-sm text-gray-700 mt-1">救援完成后，系统自动评估救援效率，优化后续调度算法和流程。</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 协同救援效果对比 -->
+                    <div class="bg-white rounded-lg shadow-md p-6">
+                        <h3 class="font-bold text-lg mb-4 flex items-center text-collaboration">
+                            <i class="fa fa-bar-chart mr-2"></i> 跨区域协同救援效果对比
+                        </h3>
+                        <div class="h-72">
+                            <canvas id="collaborationChart"></canvas>
+                        </div>
+                        <div class="mt-4 text-sm text-gray-600">
+                            <p><strong>数据说明：</strong> 传统救援模式（橙色）vs 智慧协同救援模式（红色），在响应时间、救援效率、资源利用率等维度均有显著提升。</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 5. 应对策略总结 -->
+        <section id="strategy" class="mb-10">
+            <h2 class="text-xl font-bold mb-6 flex items-center text-primary">
+                <i class="fa fa-lightbulb-o mr-2"></i> 智慧预警系统应对策略总结
+            </h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- 误报率优化策略 -->
+                <div class="bg-white rounded-lg shadow-md p-6 card-hover">
+                    <div class="w-12 h-12 rounded-full bg-smoke/10 flex items-center justify-center text-smoke mb-4">
+                        <i class="fa fa-filter text-2xl"></i>
+                    </div>
+                    <h3 class="font-bold text-lg mb-3 text-smoke">误报率优化策略</h3>
+                    <ul class="list-disc list-inside text-gray-700 space-y-2 ml-2">
+                        <li>采用多维度传感器数据融合技术</li>
+                        <li>基于AI算法的智能数据筛选和分析</li>
+                        <li>构建住户行为特征模型，识别正常活动</li>
+                        <li>动态调整预警阈值，适配不同场景</li>
+                        <li>建立误报反馈机制，持续优化算法</li>
+                    </ul>
+                    <div class="mt-4 pt-4 border-t border-gray-100">
+                        <button class="w-full bg-smoke/10 hover:bg-smoke/20 text-smoke rounded py-2 transition-colors">
+                            查看详细策略文档
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- 平台可靠性保障策略 -->
+                <div class="bg-white rounded-lg shadow-md p-6 card-hover">
+                    <div class="w-12 h-12 rounded-full bg-system/10 flex items-center justify-center text-system mb-4">
+                        <i class="fa fa-shield text-2xl"></i>
+                    </div>
+                    <h3 class="font-bold text-lg mb-3 text-system">平台可靠性保障策略</h3>
+                    <ul class="list-disc list-inside text-gray-700 space-y-2 ml-2">
+                        <li>构建多层次系统冗余架构，避免单点故障</li>
+                        <li>建立完善的应急预案和操作手册</li>
+                        <li>定期开展系统故障应急演练</li>
+                        <li>部署人工巡检作为技术手段的补充</li>
+                        <li>建立7×24小时技术保障团队</li>
+                    </ul>
+                    <div class="mt-4 pt-4 border-t border-gray-100">
+                        <button class="w-full bg-system/10 hover:bg-system/20 text-system rounded py-2 transition-colors">
+                            查看详细策略文档
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- 跨区域协同优化策略 -->
+                <div class="bg-white rounded-lg shadow-md p-6 card-hover">
+                    <div class="w-12 h-12 rounded-full bg-collaboration/10 flex items-center justify-center text-collaboration mb-4">
+                        <i class="fa fa-globe text-2xl"></i>
+                    </div>
+                    <h3 class="font-bold text-lg mb-3 text-collaboration">跨区域协同优化策略</h3>
+                    <ul class="list-disc list-inside text-gray-700 space-y-2 ml-2">
+                        <li>建立统一的云端数据共享平台</li>
+                        <li>制定跨区域协同救援标准和流程</li>
+                        <li>部署智能资源调度算法和系统</li>
+                        <li>建立常态化跨区域联合演练机制</li>
+                        <li>统一指挥体系和通信标准</li>
+                    </ul>
+                    <div class="mt-4 pt-4 border-t border-gray-100">
+                        <button class="w-full bg-collaboration/10 hover:bg-collaboration/20 text-collaboration rounded py-2 transition-colors">
+                            查看详细策略文档
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 行业推广建议 -->
+            <div class="bg-white rounded-lg shadow-md p-6 mt-8">
+                <h3 class="font-bold text-lg mb-4 flex items-center text-primary">
+                    <i class="fa fa-paper-plane mr-2"></i> 行业推广与落地建议
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <h4 class="font-medium text-gray-800 mb-3">政策层面</h4>
+                        <ul class="list-disc list-inside text-gray-700 space-y-2 ml-2">
+                            <li>制定高层住宅智慧消防建设标准和规范</li>
+                            <li>出台财政补贴政策，鼓励老旧小区改造</li>
+                            <li>建立智慧消防系统验收和评估机制</li>
+                            <li>加强跨区域协同救援的政策保障</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 class="font-medium text-gray-800 mb-3">技术层面</h4>
+                        <ul class="list-disc list-inside text-gray-700 space-y-2 ml-2">
+                            <li>推动AI算法和大数据技术的深度应用</li>
+                            <li>加强系统安全性和可靠性设计</li>
+                            <li>标准化数据接口，促进互联互通</li>
+                            <li>持续技术创新，降低建设和运维成本</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 class="font-medium text-gray-800 mb-3">管理层面</h4>
+                        <ul class="list-disc list-inside text-gray-700 space-y-2 ml-2">
+                            <li>建立专业的智慧消防运维团队</li>
+                            <li>完善应急演练和培训体系</li>
+                            <li>建立多方协同的管理机制</li>
+                            <li>加强住户消防安全教育和培训</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 class="font-medium text-gray-800 mb-3">应用层面</h4>
+                        <ul class="list-disc list-inside text-gray-700 space-y-2 ml-2">
+                            <li>分阶段推进，先试点后推广</li>
+                            <li>结合实际需求，定制化解决方案</li>
+                            <li>建立效果评估和持续优化机制</li>
+                            <li>注重用户体验，提升接受度和使用率</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 6. 数据成效分析 -->
+        <section id="data" class="mb-10">
+            <h2 class="text-xl font-bold mb-6 flex items-center text-primary">
+                <i class="fa fa-bar-chart mr-2"></i> 智慧预警系统数据成效分析
+            </h2>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- 核心指标对比 -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h3 class="font-bold text-lg mb-4 flex items-center text-primary">
+                        <i class="fa fa-balance-scale mr-2"></i> 智慧系统 vs 传统系统核心指标对比
+                    </h3>
+                    <div class="h-72">
+                        <canvas id="coreMetricsChart"></canvas>
+                    </div>
+                    <div class="mt-4 text-sm text-gray-600">
+                        <p><strong>核心发现：</strong> 智慧预警系统在误报率、响应时间、救援效率、系统可靠性等关键指标上均显著优于传统系统，综合效能提升60%以上。</p>
+                    </div>
+                </div>
+                
+                <!-- 投资回报分析 -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h3 class="font-bold text-lg mb-4 flex items-center text-primary">
+                        <i class="fa fa-line-chart mr-2"></i> 智慧预警系统投资回报分析
+                    </h3>
+                    <div class="h-72">
+                        <canvas id="roiChart"></canvas>
+                    </div>
+                    <div class="mt-4 text-sm text-gray-600">
+                        <p><strong>经济价值：</strong> 智慧预警系统初期投入较高，但通过降低误报成本、提高救援效率、减少火灾损失等方式，平均18个月可收回投资成本，长期收益显著。</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 成效总结 -->
+            <div class="bg-white rounded-lg shadow-md p-6 mt-8">
+                <h3 class="font-bold text-lg mb-4 flex items-center text-primary">
+                    <i class="fa fa-check-circle mr-2"></i> 智慧预警系统整体成效总结
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 text-center">
+                    <div class="border border-success/20 rounded-lg p-4 bg-success/5">
+                        <div class="text-3xl font-bold text-success mb-2">82%</div>
+                        <div class="text-sm text-gray-700">误报率降低</div>
+                    </div>
+                    <div class="border border-success/20 rounded-lg p-4 bg-success/5">
+                        <div class="text-3xl font-bold text-success mb-2">99.5%</div>
+                        <div class="text-sm text-gray-700">系统可靠性</div>
+                    </div>
+                    <div class="border border-success/20 rounded-lg p-4 bg-success/5">
+                        <div class="text-3xl font-bold text-success mb-2">40%</div>
+                        <div class="text-sm text-gray-700">救援效率提升</div>
+                    </div>
+                    <div class="border border-success/20 rounded-lg p-4 bg-success/5">
+                        <div class="text-3xl font-bold text-success mb-2">60%</div>
+                        <div class="text-sm text-gray-700">综合效能提升</div>
+                    </div>
+                </div>
+                <div class="mt-6 text-gray-700">
+                    <p class="mb-2"><strong>总结：</strong> 高层住宅火灾智慧预警系统通过AI算法优化、系统冗余设计、跨区域协同机制三大核心手段，有效解决了传统预警系统的误报率高、可靠性差、协同效率低等痛点问题，为高层住宅消防安全提供了全方位的智慧化保障。</p>
+                    <p>未来需持续推进技术创新和模式创新，进一步提升系统智能化水平，完善应急响应机制，加强跨区域协同能力，为高层住宅消防安全保驾护航。</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="bg-gray-800 text-white py-8">
+        <div class="container mx-auto px-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div>
+                    <h3 class="text-lg font-bold mb-4 flex items-center">
+                        <i class="fa fa-fire-extinguisher mr-2"></i> 高层住宅火灾智慧预警系统
+                    </h3>
+                    <p class="text-gray-400 text-sm">
+                        聚焦高层住宅火灾预警痛点，通过智慧化手段提升预警准确性、系统可靠性和救援协同效率，为城市消防安全保驾护航。
+                    </p>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold mb-4">快速导航</h3>
+                    <ul class="space-y-2 text-gray-400 text-sm">
+                        <li><a href="#overview" class="hover:text-white transition-colors">系统总览</a></li>
+                        <li><a href="#case1" class="hover:text-white transition-colors">误报率优化案例</a></li>
+                        <li><a href="#case2" class="hover:text-white transition-colors">平台失效应急案例</a></li>
+                        <li><a href="#case3" class="hover:text-white transition-colors">跨区域协同案例</a></li>
+                        <li><a href="#strategy" class="hover:text-white transition-colors">应对策略总结</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold mb-4">联系我们</h3>
+                    <ul class="space-y-2 text-gray-400 text-sm">
+                        <li class="flex items-center"><i class="fa fa-envelope mr-2"></i> support@smartfire.com</li>
+                        <li class="flex items-center"><i class="fa fa-phone mr-2"></i> 400-123-4567</li>
+                        <li class="flex items-center"><i class="fa fa-map-marker mr-2"></i> 北京市海淀区智慧消防产业园</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="mt-8 pt-6 border-t border-gray-700 text-center text-gray-500 text-sm">
+                © 2026 高层住宅火灾智慧预警系统 版权所有 | 京ICP备12345678号
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript代码 -->
+    <script>
+        // 页面加载完成后初始化图表
+        document.addEventListener('DOMContentLoaded', function() {
+            // 1. 误报率优化效果对比图表
+            const falseAlarmCtx = document.getElementById('falseAlarmChart').getContext('2d');
+            new Chart(falseAlarmCtx, {
+                type: 'line',
+                data: {
+                    labels: ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'],
+                    datasets: [
+                        {
+                            label: '传统系统误报率(%)',
+                            data: [35, 34, 36, 35, 34, 35, 18, 10, 8, 7, 6.5, 6.3],
+                            borderColor: '#1890FF',
+                            backgroundColor: 'rgba(24, 144, 255, 0.1)',
+                            tension: 0.3,
+                            fill: true
+                        },
+                        {
+                            label: '智慧系统误报率(%)',
+                            data: [35, 34, 36, 35, 34, 35, 8, 6, 5, 4.5, 4, 3.8],
+                            borderColor: '#7B68EE',
+                            backgroundColor: 'rgba(123, 104, 238, 0.1)',
+                            tension: 0.3,
+                            fill: true
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: '误报率优化效果对比'
+                        },
+                        legend: {
+                            position: 'top',
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: '误报率(%)'
+                            }
+                        }
+                    }
+                }
+            });
+
+            // 2. 系统可靠性提升图表
+            const systemReliabilityCtx = document.getElementById('systemReliabilityChart').getContext('2d');
+            new Chart(systemReliabilityCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['故障前', '短期改进', '中期目标', '长期目标'],
+                    datasets: [
+                        {
+                            label: '系统可用性(%)',
+                            data: [95, 98, 99.5, 99.9],
+                            backgroundColor: '#13C2C2',
+                        },
+                        {
+                            label: '故障恢复时间(分钟)',
+                            data: [120, 60, 30, 15],
+                            backgroundColor: '#FAAD14',
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: '系统可靠性提升规划'
+                        },
+                        legend: {
+                            position: 'top',
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+
+            // 3. 跨区域协同救援效果对比
+            const collaborationCtx = document.getElementById('collaborationChart').getContext('2d');
+            new Chart(collaborationCtx, {
+                type: 'radar',
+                data: {
+                    labels: [
+                        '响应时间',
+                        '救援效率',
+                        '资源利用率',
+                        '信息同步性',
+                        '指挥协调性',
+                        '处置成功率'
+                    ],
+                    datasets: [
+                        {
+                            label: '传统救援模式',
+                            data: [40, 50, 60, 30, 40, 70],
+                            fill: true,
+                            backgroundColor: 'rgba(255, 122, 69, 0.2)',
+                            borderColor: 'rgba(255, 122, 69, 0.8)',
+                            pointBackgroundColor: 'rgba(255, 122, 69, 1)',
+                            pointBorderColor: '#fff',
+                            pointHoverBackgroundColor: '#fff',
+                            pointHoverBorderColor: 'rgba(255, 122, 69, 1)'
+                        },
+                        {
+                            label: '智慧协同救援模式',
+                            data: [85, 90, 88, 95, 92, 95],
+                            fill: true,
+                            backgroundColor: 'rgba(245, 34, 45, 0.2)',
+                            borderColor: 'rgba(245, 34, 45, 0.8)',
+                            pointBackgroundColor: 'rgba(245, 34, 45, 1)',
+                            pointBorderColor: '#fff',
+                            pointHoverBackgroundColor: '#fff',
+                            pointHoverBorderColor: 'rgba(245, 34, 45, 1)'
+                        }
+                    ]
+                },
+                options: {
+                    elements: {
+                        line: {
+                            borderWidth: 3
+                        }
+                    },
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: '跨区域协同救援效果对比'
+                        }
+                    }
+                }
+            });
+
+            // 4. 核心指标对比图表
+            const coreMetricsCtx = document.getElementById('coreMetricsChart').getContext('2d');
+            new Chart(coreMetricsCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['误报率降低', '响应时间缩短', '救援效率提升', '系统可靠性', '资源利用率'],
+                    datasets: [
+                        {
+                            label: '传统系统',
+                            data: [0, 0, 0, 90, 60],
+                            backgroundColor: '#86909C',
+                        },
+                        {
+                            label: '智慧系统',
+                            data: [82, 60, 40, 99.5, 88],
+                            backgroundColor: '#1890FF',
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: '核心指标对比(%)'
+                        },
+                        legend: {
+                            position: 'top',
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: '提升/优化百分比(%)'
+                            }
+                        }
+                    }
+                }
+            });
+
+            // 5. 投资回报分析图表
+            const roiCtx = document.getElementById('roiChart').getContext('2d');
+            new Chart(roiCtx, {
+                type: 'line',
+                data: {
+                    labels: ['1月', '3月', '6月', '9月', '12月', '15月', '18月', '24月', '36月'],
+                    datasets: [
+                        {
+                            label: '投入成本(万元)',
