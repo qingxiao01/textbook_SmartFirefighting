@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>工业园区智能监管系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Microsoft Yahei', sans-serif;
+        }
+
+        body {
+            background-color: #f0f2f5;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        /* 顶部导航栏 */
+        header {
+            background: linear-gradient(135deg, #0a2463, #3e92cc);
+            color: white;
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo-icon {
+            font-size: 1.8rem;
+        }
+
+        .logo-text {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .system-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+        }
+
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: #4cd964;
+        }
+
+        /* 主内容区 */
+        .container {
+            max-width: 1400px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+
+        /* 概览面板 */
+        .overview-panel {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .overview-title {
+            font-size: 2rem;
+            color: #0a2463;
+            margin-bottom: 1rem;
+        }
+
+        .overview-desc {
+            color: #555;
+            max-width: 800px;
+            margin: 0 auto 2rem;
+            font-size: 1.05rem;
+        }
+
+        /* 监管模块网格 */
+        .modules-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        /* 模块卡片样式 */
+        .module-card {
+            background: white;
+            border-radius: 10px;
+            padding: 1.8rem 1.5rem;
+            box-shadow: 0 3px 15px rgba(0,0,0,0.05);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-top: 4px solid #3e92cc;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .module-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(62, 146, 204, 0.05), transparent);
+            transition: 0.5s;
+        }
+
+        .module-card:hover::before {
+            left: 100%;
+        }
+
+        .module-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+
+        .module-card.active {
+            border-top: 4px solid #00cc66;
+            background-color: #f9fffb;
+        }
+
+        .module-icon {
+            font-size: 2.8rem;
+            color: #3e92cc;
+            margin-bottom: 1.2rem;
+        }
+
+        .module-title {
+            font-size: 1.3rem;
+            color: #1a3b5d;
+            margin-bottom: 0.8rem;
+            font-weight: 600;
+        }
+
+        .module-desc {
+            color: #666;
+            font-size: 0.95rem;
+            margin-bottom: 1rem;
+            line-height: 1.7;
+        }
+
+        /* 详情面板 */
+        .detail-panel {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+            display: none;
+            margin-bottom: 2rem;
+            border-left: 5px solid #3e92cc;
+        }
+
+        .detail-panel.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .detail-title {
+            font-size: 1.8rem;
+            color: #0a2463;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .detail-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+
+        @media (max-width: 768px) {
+            .detail-content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .detail-text {
+            color: #444;
+            line-height: 1.8;
+        }
+
+        .detail-text p {
+            margin-bottom: 1rem;
+        }
+
+        .detail-features {
+            margin-top: 1rem;
+        }
+
+        .detail-features li {
+            margin-bottom: 0.8rem;
+            list-style-type: none;
+            position: relative;
+            padding-left: 1.5rem;
+        }
+
+        .detail-features li:before {
+            content: "✓";
+            color: #00cc66;
+            font-weight: bold;
+            position: absolute;
+            left: 0;
+        }
+
+        .detail-image {
+            background-color: #f5f9ff;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            min-height: 250px;
+        }
+
+        .image-placeholder {
+            color: #3e92cc;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+
+        .image-placeholder i {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            display: block;
+        }
+
+        /* 底部信息 */
+        footer {
+            text-align: center;
+            padding: 2rem;
+            color: #777;
+            border-top: 1px solid #eee;
+            margin-top: 2rem;
+            background-color: white;
+        }
+
+        /* 按钮样式 */
+        .back-btn {
+            background-color: #3e92cc;
+            color: white;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            margin-top: 1rem;
+            transition: background-color 0.3s ease;
+        }
+
+        .back-btn:hover {
+            background-color: #2a7cb8;
+        }
+
+        /* 数据指标样式 */
+        .data-metrics {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            margin-top: 1.5rem;
+            gap: 1rem;
+        }
+
+        .metric-card {
+            background-color: #f5f9ff;
+            padding: 1rem;
+            border-radius: 8px;
+            width: 120px;
+            text-align: center;
+        }
+
+        .metric-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #0a2463;
+            margin-bottom: 0.5rem;
+        }
+
+        .metric-label {
+            font-size: 0.85rem;
+            color: #666;
+        }
+    </style>
+    <!-- 引入图标库 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- 顶部导航 -->
+    <header>
+        <div class="header-container">
+            <div class="logo">
+                <span class="logo-icon"><i class="fas fa-industry"></i></span>
+                <span class="logo-text">工业园区智能监管系统</span>
+            </div>
+            <div class="system-status">
+                <span class="status-indicator"></span>
+                <span>系统运行正常 | 实时监管中</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主内容区 -->
+    <div class="container">
+        <!-- 概览面板 -->
+        <div class="overview-panel">
+            <h1 class="overview-title">工业园区智能监管解决方案</h1>
+            <p class="overview-desc">
+                基于物联网、大数据、人工智能等技术，构建工业园区全方位智能监管体系，实现园区安防、环保、设备、人员、车辆的一体化管控，
+                提升园区管理效率，降低安全风险，保障园区绿色、安全、高效运行。
+            </p>
+            <div class="data-metrics">
+                <div class="metric-card">
+                    <div class="metric-value">98.7%</div>
+                    <div class="metric-label">设备在线率</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value">0</div>
+                    <div class="metric-label">今日告警数</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value">245</div>
+                    <div class="metric-label">在园人员数</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value">108</div>
+                    <div class="metric-label">在园车辆数</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value">达标</div>
+                    <div class="metric-label">环保指标</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 监管模块网格 -->
+        <div class="modules-grid">
+            <!-- 园区安防模块 -->
+            <div class="module-card" data-module="security">
+                <div class="module-icon"><i class="fas fa-shield-halved"></i></div>
+                <h3 class="module-title">园区智能安防</h3>
+                <p class="module-desc">周界防范、视频监控、入侵检测、重点区域布防、智能巡检</p>
+            </div>
+
+            <!-- 环保监测模块 -->
+            <div class="module-card" data-module="environment">
+                <div class="module-icon"><i class="fas fa-leaf"></i></div>
+                <h3 class="module-title">环保智能监测</h3>
+                <p class="module-desc">废气监测、废水监测、噪音监测、扬尘监测、环保数据上报</p>
+            </div>
+
+            <!-- 设备监管模块 -->
+            <div class="module-card" data-module="equipment">
+                <div class="module-icon"><i class="fas fa-microchip"></i></div>
+                <h3 class="module-title">设备智能监管</h3>
+                <p class="module-desc">设备状态监测、故障预警、远程控制、维保管理、能耗分析</p>
+            </div>
+
+            <!-- 人员管理模块 -->
+            <div class="module-card" data-module="personnel">
+                <div class="module-icon"><i class="fas fa-user-gear"></i></div>
+                <h3 class="module-title">人员智能管理</h3>
+                <p class="module-desc">人员定位、考勤管理、权限管控、访客管理、违规行为识别</p>
+            </div>
+
+            <!-- 车辆管控模块 -->
+            <div class="module-card" data-module="vehicle">
+                <div class="module-icon"><i class="fas fa-truck"></i></div>
+                <h3 class="module-title">车辆智能管控</h3>
+                <p class="module-desc">车牌识别、车辆定位、道闸联动、危化品车辆监管、停车管理</p>
+            </div>
+
+            <!-- 应急指挥模块 -->
+            <div class="module-card" data-module="emergency">
+                <div class="module-icon"><i class="fas fa-helmet-safety"></i></div>
+                <h3 class="module-title">应急智能指挥</h3>
+                <p class="module-desc">事故报警、应急预案、联动处置、救援调度、事后复盘</p>
+            </div>
+        </div>
+
+        <!-- 详情面板 -->
+        <div id="security-detail" class="detail-panel">
+            <h2 class="detail-title"><i class="fas fa-shield-halved"></i> 园区智能安防</h2>
+            <div class="detail-content">
+                <div class="detail-text">
+                    <p>园区智能安防系统是工业园区安全管理的核心，通过融合视频监控、周界防范、智能识别等技术，实现园区全域无死角安全监管，有效防范入侵、盗窃、破坏等安全事件。</p>
+                    <ul class="detail-features">
+                        <li>智能周界防范：激光对射、电子围栏、振动光纤多维度防范非法入侵</li>
+                        <li>AI视频分析：识别翻越、聚集、逗留、破坏等异常行为并实时报警</li>
+                        <li>重点区域布防：危化品仓库、配电室等重点区域24小时不间断监控</li>
+                        <li>智能巡检机器人：替代人工完成园区定时巡检，提升巡检效率和覆盖率</li>
+                        <li>声光联动报警：发生异常时现场声光报警，同步推送至管理平台</li>
+                        <li>安防数据中台：整合所有安防设备数据，统一管理和分析</li>
+                    </ul>
+                </div>
+                <div class="detail-image">
+                    <div class="image-placeholder">
+                        <i class="fas fa-shield-halved"></i>
+                        <p>园区安防监控拓扑图</p>
+                        <p>AI视频分析预警界面</p>
+                    </div>
+                </div>
+            </div>
+            <button class="back-btn" onclick="hideDetail()">返回</button>
+        </div>
+
+        <div id="environment-detail" class="detail-panel">
+            <h2 class="detail-title"><i class="fas fa-leaf"></i> 环保智能监测</h2>
+            <div class="detail-content">
+                <div class="detail-text">
+                    <p>环保智能监测系统实时监测工业园区的各类环境指标，实现污染源头追溯、超标预警、数据上报等功能，助力园区绿色发展，满足环保监管要求。</p>
+                    <ul class="detail-features">
+                        <li>废气监测：实时监测SO₂、NOx、VOCs等有害气体浓度</li>
+                        <li>废水监测：监测pH值、COD、氨氮等水质指标，异常即时报警</li>
+                        <li>噪音监测：多点布设噪音传感器，监测厂区及周边噪音水平</li>
+                        <li>扬尘监测：监测PM2.5、PM10等扬尘指标，联动喷淋系统</li>
+                        <li>数据自动上报：按要求向环保部门自动上报监测数据</li>
+                        <li>污染溯源分析：通过数据分析定位污染源头，辅助精准治理</li>
+                    </ul>
+                </div>
+                <div class="detail-image">
+                    <div class="image-placeholder">
+                        <i class="fas fa-leaf"></i>
+                        <p>园区环保监测网络图</p>
+                        <p>环境数据可视化大屏</p>
+                    </div>
+                </div>
+            </div>
+            <button class="back-btn" onclick="hideDetail()">返回</button>
+        </div>
+
+        <div id="equipment-detail" class="detail-panel">
+            <h2 class="detail-title"><i class="fas fa-microchip"></i> 设备智能监管</h2>
+            <div class="detail-content">
+                <div class="detail-text">
+                    <p>设备智能监管系统实现对园区生产设备、公用设施、特种设备的全生命周期管理，通过实时监测设备运行状态，提前预警故障风险，降低设备停机率。</p>
+                    <ul class="detail-features">
+                        <li>实时状态监测：电压、电流、温度、转速等运行参数监测</li>
+                        <li>故障智能预警：基于大数据分析预测设备故障，提前维护</li>
+                        <li>远程控制操作：支持设备远程启停、参数调整等操作</li>
+                        <li>维保计划管理：自动生成设备维保计划，记录维保历史</li>
+                        <li>能耗分析优化：分析设备能耗数据，提供节能优化建议</li>
+                        <li>特种设备监管：电梯、起重机等特种设备定期检测提醒</li>
+                    </ul>
+                </div>
+                <div class="detail-image">
+                    <div class="image-placeholder">
+                        <i class="fas fa-microchip"></i>
+                        <p>设备运维管理平台</p>
+                        <p>设备状态监测仪表盘</p>
+                    </div>
+                </div>
+            </div>
+            <button class="back-btn" onclick="hideDetail()">返回</button>
+        </div>
+
+        <div id="personnel-detail" class="detail-panel">
+            <h2 class="detail-title"><i class="fas fa-user-gear"></i> 人员智能管理</h2>
+            <div class="detail-content">
+                <div class="detail-text">
+                    <p>人员智能管理系统通过定位、识别、权限管控等技术，实现对园区内部员工、外来访客、施工人员的全流程管理，保障人员安全和园区秩序。</p>
+                    <ul class="detail-features">
+                        <li>人员精准定位：通过UWB/蓝牙定位技术实现人员实时位置追踪</li>
+                        <li>智能考勤管理：人脸识别考勤，自动统计考勤数据</li>
+                        <li>区域权限管控：设置电子围栏，限制人员进入危险区域</li>
+                        <li>访客智能管理：线上预约、身份核验、电子通行证、轨迹追踪</li>
+                        <li>违规行为识别：识别未佩戴安全帽、违规操作等行为</li>
+                        <li>一键紧急求助：人员遇到危险时可一键发起求助报警</li>
+                    </ul>
+                </div>
+                <div class="detail-image">
+                    <div class="image-placeholder">
+                        <i class="fas fa-user-gear"></i>
+                        <p>人员定位系统界面</p>
+                        <p>访客管理流程示意图</p>
+                    </div>
+                </div>
+            </div>
+            <button class="back-btn" onclick="hideDetail()">返回</button>
+        </div>
+
+        <div id="vehicle-detail" class="detail-panel">
+            <h2 class="detail-title"><i class="fas fa-truck"></i> 车辆智能管控</h2>
+            <div class="detail-content">
+                <div class="detail-text">
+                    <p>车辆智能管控系统实现对园区内各类车辆的智能化管理，包括进出管控、定位追踪、停车管理等，提升园区交通效率，保障车辆行驶安全。</p>
+                    <ul class="detail-features">
+                        <li>智能车牌识别：自动识别车牌，实现无人值守进出管控</li>
+                        <li>车辆实时定位：对园区内车辆进行实时位置追踪</li>
+                        <li>道闸智能联动：根据权限自动控制道闸开关</li>
+                        <li>危化品车辆监管：专用通道、限速行驶、实时监控</li>
+                        <li>智能停车管理：车位引导、反向寻车、自动缴费</li>
+                        <li>违规行驶监测：识别超速、逆行、违停等违规行为</li>
+                    </ul>
+                </div>
+                <div class="detail-image">
+                    <div class="image-placeholder">
+                        <i class="fas fa-truck"></i>
+                        <p>车辆管控系统架构图</p>
+                        <p>园区车辆轨迹热力图</p>
+                    </div>
+                </div>
+            </div>
+            <button class="back-btn" onclick="hideDetail()">返回</button>
+        </div>
+
+        <div id="emergency-detail" class="detail-panel">
+            <h2 class="detail-title"><i class="fas fa-helmet-safety"></i> 应急智能指挥</h2>
+            <div class="detail-content">
+                <div class="detail-text">
+                    <p>应急智能指挥系统构建了工业园区一体化应急处置体系，实现突发事件的快速响应、科学处置和高效救援，最大限度减少事故损失。</p>
+                    <ul class="detail-features">
+                        <li>多渠道报警接入：现场报警、视频识别、传感器报警等</li>
+                        <li>智能应急预案：根据事故类型自动匹配最优处置方案</li>
+                        <li>多方联动处置：同步通知消防、医疗、安保等相关人员</li>
+                        <li>救援路径规划：基于实时路况规划最优救援路线</li>
+                        <li>现场视频指挥：实时查看事故现场视频，远程指挥调度</li>
+                        <li>事后复盘分析：记录事故全过程，生成复盘报告</li>
+                    </ul>
+                </div>
+                <div class="detail-image">
+                    <div class="image-placeholder">
+                        <i class="fas fa-helmet-safety"></i>
+                        <p>应急指挥中心界面</p>
+                        <p>应急预案流程图</p>
+                    </div>
+                </div>
+            </div>
+            <button class="back-btn" onclick="hideDetail()">返回</button>
+        </div>
+    </div>
+
+    <!-- 底部信息 -->
+    <footer>
+        <p>工业园区智能监管系统 &copy; 2026 版权所有</p>
+        <p>本系统仅用于展示，实际部署需结合园区具体场景定制开发</p>
+    </footer>
+
+    <script>
+        // 获取所有模块卡片
+        const moduleCards = document.querySelectorAll('.module-card');
+        // 获取所有详情面板
+        const detailPanels = document.querySelectorAll('.detail-panel');
+
+        // 为每个模块卡片添加点击事件
+        moduleCards.forEach(card => {
+            card.addEventListener('click', function() {
+                // 移除所有卡片的active类
+                moduleCards.forEach(c => c.classList.remove('active'));
+                // 给当前点击的卡片添加active类
+                this.classList.add('active');
+                
+                // 隐藏所有详情面板
+                detailPanels.forEach(panel => panel.classList.remove('active'));
+                
+                // 显示对应的详情面板
+                const moduleName = this.getAttribute('data-module');
+                const targetPanel = document.getElementById(`${moduleName}-detail`);
+                targetPanel.classList.add('active');
+                
+                // 滚动到详情面板位置
+                targetPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+        });
+
+        // 隐藏详情面板的函数
+        function hideDetail() {
+            // 移除所有卡片的active类
+            moduleCards.forEach(c => c.classList.remove('active'));
+            // 隐藏所有详情面板
+            detailPanels.forEach(panel => panel.classList.remove('active'));
+            
+            // 滚动回顶部
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // 页面加载完成后的初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('工业园区智能监管系统加载完成');
+            
+            // 模拟数据实时更新效果
+            setInterval(() => {
+                const randomValue = (Math.random() * 0.5).toFixed(1);
+                const onlineRate = document.querySelector('.metric-card:nth-child(1) .metric-value');
+                onlineRate.textContent = (98.5 + parseFloat(randomValue)).toFixed(1) + '%';
+            }, 5000);
+        });
+    </script>
+</body>
+</html>

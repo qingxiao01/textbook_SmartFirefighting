@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>充电桩智能监控系统</title>
+    <!-- 引入Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入Font Awesome图标 -->
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <!-- 引入Chart.js图表库 -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+    
+    <!-- 自定义Tailwind配置 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#165DFF', // 主色调-科技蓝
+                        success: '#00B42A', // 成功-绿色
+                        warning: '#FF7D00', // 警告-橙色
+                        danger: '#F53F3F',  // 危险-红色
+                        normal: '#86909C',  // 正常-灰色
+                        dark: '#1D2129',    // 深色背景
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    
+    <!-- 自定义工具类 -->
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .card-shadow {
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            }
+            .status-dot {
+                width: 12px;
+                height: 12px;
+                border-radius: 50%;
+                display: inline-block;
+            }
+            .charging-pulse {
+                animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+            }
+            @keyframes pulse {
+                0%, 100% {
+                    opacity: 1;
+                }
+                50% {
+                    opacity: 0.5;
+                }
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans text-dark">
+    <!-- 顶部导航栏 -->
+    <header class="bg-white card-shadow sticky top-0 z-50">
+        <div class="container mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+                <i class="fa fa-bolt text-primary text-2xl"></i>
+                <h1 class="text-xl font-bold text-primary">充电桩智能监控系统</h1>
+            </div>
+            <div class="flex items-center space-x-6">
+                <div class="hidden md:flex items-center space-x-4">
+                    <a href="#" class="text-dark hover:text-primary transition-colors font-medium">实时监控</a>
+                    <a href="#" class="text-dark hover:text-primary transition-colors font-medium">设备管理</a>
+                    <a href="#" class="text-dark hover:text-primary transition-colors font-medium">数据统计</a>
+                    <a href="#" class="text-dark hover:text-primary transition-colors font-medium">告警中心</a>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <div class="flex items-center">
+                        <i class="fa fa-bell text-xl text-primary"></i>
+                        <span class="absolute -top-1 -right-1 bg-danger text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">3</span>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <img src="https://picsum.photos/id/1005/40/40" alt="用户头像" class="w-8 h-8 rounded-full">
+                        <span class="hidden md:inline font-medium">管理员</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主要内容区域 -->
+    <main class="container mx-auto px-4 py-6">
+        <!-- 数据概览卡片 -->
+        <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <!-- 总充电桩数 -->
+            <div class="bg-white rounded-lg p-4 card-shadow hover:shadow-lg transition-shadow cursor-pointer">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-normal text-sm">总充电桩数</p>
+                        <h3 class="text-3xl font-bold mt-1">128</h3>
+                        <p class="text-success text-xs mt-2"><i class="fa fa-arrow-up"></i> 较昨日 +2</p>
+                    </div>
+                    <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                        <i class="fa fa-plug text-xl"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 正在充电 -->
+            <div class="bg-white rounded-lg p-4 card-shadow hover:shadow-lg transition-shadow cursor-pointer">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-normal text-sm">正在充电</p>
+                        <h3 class="text-3xl font-bold mt-1">46</h3>
+                        <p class="text-warning text-xs mt-2"><i class="fa fa-arrow-up"></i> 较昨日 +8</p>
+                    </div>
+                    <div class="w-10 h-10 rounded-full bg-warning/10 flex items-center justify-center text-warning">
+                        <i class="fa fa-bolt text-xl"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 空闲设备 -->
+            <div class="bg-white rounded-lg p-4 card-shadow hover:shadow-lg transition-shadow cursor-pointer">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-normal text-sm">空闲设备</p>
+                        <h3 class="text-3xl font-bold mt-1">62</h3>
+                        <p class="text-normal text-xs mt-2"><i class="fa fa-minus"></i> 较昨日 0</p>
+                    </div>
+                    <div class="w-10 h-10 rounded-full bg-success/10 flex items-center justify-center text-success">
+                        <i class="fa fa-check-circle text-xl"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 故障设备 -->
+            <div class="bg-white rounded-lg p-4 card-shadow hover:shadow-lg transition-shadow cursor-pointer">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-normal text-sm">故障设备</p>
+                        <h3 class="text-3xl font-bold mt-1">3</h3>
+                        <p class="text-danger text-xs mt-2"><i class="fa fa-arrow-down"></i> 较昨日 -1</p>
+                    </div>
+                    <div class="w-10 h-10 rounded-full bg-danger/10 flex items-center justify-center text-danger">
+                        <i class="fa fa-exclamation-triangle text-xl"></i>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 监控主体区域 -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- 左侧：充电桩列表 -->
+            <div class="lg:col-span-2">
+                <div class="bg-white rounded-lg card-shadow p-4 mb-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-lg font-bold">充电桩实时状态</h2>
+                        <div class="flex space-x-2">
+                            <select class="border border-gray-200 rounded px-2 py-1 text-sm">
+                                <option>全部区域</option>
+                                <option>A区</option>
+                                <option>B区</option>
+                                <option>C区</option>
+                            </select>
+                            <button class="bg-primary text-white rounded px-3 py-1 text-sm flex items-center">
+                                <i class="fa fa-refresh mr-1"></i> 刷新
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- 充电桩列表 -->
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead>
+                                <tr class="border-b border-gray-200">
+                                    <th class="text-left py-2 px-1 font-medium">设备编号</th>
+                                    <th class="text-left py-2 px-1 font-medium">区域</th>
+                                    <th class="text-left py-2 px-1 font-medium">状态</th>
+                                    <th class="text-left py-2 px-1 font-medium">充电功率</th>
+                                    <th class="text-left py-2 px-1 font-medium">剩余时间</th>
+                                    <th class="text-left py-2 px-1 font-medium">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="charger-list">
+                                <!-- 正在充电 -->
+                                <tr class="border-b border-gray-100 hover:bg-gray-50 cursor-pointer" data-id="001">
+                                    <td class="py-3 px-1">CD-001</td>
+                                    <td class="py-3 px-1">A区</td>
+                                    <td class="py-3 px-1">
+                                        <span class="status-dot bg-warning charging-pulse mr-2"></span>
+                                        <span class="text-warning">充电中</span>
+                                    </td>
+                                    <td class="py-3 px-1">60kW</td>
+                                    <td class="py-3 px-1">25分钟</td>
+                                    <td class="py-3 px-1">
+                                        <button class="text-primary mr-2" onclick="viewDetail('001')">
+                                            <i class="fa fa-eye"></i>
+                                        </button>
+                                        <button class="text-normal">
+                                            <i class="fa fa-cog"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr class="border-b border-gray-100 hover:bg-gray-50 cursor-pointer" data-id="002">
+                                    <td class="py-3 px-1">CD-002</td>
+                                    <td class="py-3 px-1">A区</td>
+                                    <td class="py-3 px-1">
+                                        <span class="status-dot bg-warning charging-pulse mr-2"></span>
+                                        <span class="text-warning">充电中</span>
+                                    </td>
+                                    <td class="py-3 px-1">40kW</td>
+                                    <td class="py-3 px-1">42分钟</td>
+                                    <td class="py-3 px-1">
+                                        <button class="text-primary mr-2" onclick="viewDetail('002')">
+                                            <i class="fa fa-eye"></i>
+                                        </button>
+                                        <button class="text-normal">
+                                            <i class="fa fa-cog"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                <!-- 空闲 -->
+                                <tr class="border-b border-gray-100 hover:bg-gray-50 cursor-pointer" data-id="003">
+                                    <td class="py-3 px-1">CD-003</td>
+                                    <td class="py-3 px-1">B区</td>
+                                    <td class="py-3 px-1">
+                                        <span class="status-dot bg-success mr-2"></span>
+                                        <span class="text-success">空闲</span>
+                                    </td>
+                                    <td class="py-3 px-1">0kW</td>
+                                    <td class="py-3 px-1">-</td>
+                                    <td class="py-3 px-1">
+                                        <button class="text-primary mr-2" onclick="viewDetail('003')">
+                                            <i class="fa fa-eye"></i>
+                                        </button>
+                                        <button class="text-normal">
+                                            <i class="fa fa-cog"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                <!-- 故障 -->
+                                <tr class="border-b border-gray-100 hover:bg-gray-50 cursor-pointer" data-id="004">
+                                    <td class="py-3 px-1">CD-004</td>
+                                    <td class="py-3 px-1">C区</td>
+                                    <td class="py-3 px-1">
+                                        <span class="status-dot bg-danger mr-2"></span>
+                                        <span class="text-danger">故障</span>
+                                    </td>
+                                    <td class="py-3 px-1">0kW</td>
+                                    <td class="py-3 px-1">-</td>
+                                    <td class="py-3 px-1">
+                                        <button class="text-primary mr-2" onclick="viewDetail('004')">
+                                            <i class="fa fa-eye"></i>
+                                        </button>
+                                        <button class="text-danger" onclick="handleFault('004')">
+                                            <i class="fa fa-wrench"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                <!-- 离线 -->
+                                <tr class="border-b border-gray-100 hover:bg-gray-50 cursor-pointer" data-id="005">
+                                    <td class="py-3 px-1">CD-005</td>
+                                    <td class="py-3 px-1">B区</td>
+                                    <td class="py-3 px-1">
+                                        <span class="status-dot bg-normal mr-2"></span>
+                                        <span class="text-normal">离线</span>
+                                    </td>
+                                    <td class="py-3 px-1">0kW</td>
+                                    <td class="py-3 px-1">-</td>
+                                    <td class="py-3 px-1">
+                                        <button class="text-primary mr-2" onclick="viewDetail('005')">
+                                            <i class="fa fa-eye"></i>
+                                        </button>
+                                        <button class="text-normal">
+                                            <i class="fa fa-cog"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- 分页 -->
+                    <div class="flex justify-between items-center mt-4 text-sm">
+                        <p class="text-normal">共128条记录，显示1-5条</p>
+                        <div class="flex space-x-1">
+                            <button class="w-8 h-8 rounded border border-gray-200 flex items-center justify-center hover:bg-primary hover:text-white hover:border-primary transition-colors">
+                                <i class="fa fa-angle-left"></i>
+                            </button>
+                            <button class="w-8 h-8 rounded bg-primary text-white flex items-center justify-center">1</button>
+                            <button class="w-8 h-8 rounded border border-gray-200 flex items-center justify-center hover:bg-primary hover:text-white hover:border-primary transition-colors">2</button>
+                            <button class="w-8 h-8 rounded border border-gray-200 flex items-center justify-center hover:bg-primary hover:text-white hover:border-primary transition-colors">3</button>
+                            <button class="w-8 h-8 rounded border border-gray-200 flex items-center justify-center hover:bg-primary hover:text-white hover:border-primary transition-colors">
+                                <i class="fa fa-angle-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 充电量统计图表 -->
+                <div class="bg-white rounded-lg card-shadow p-4">
+                    <h2 class="text-lg font-bold mb-4">日充电量统计</h2>
+                    <div class="h-64">
+                        <canvas id="chargingChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右侧：设备详情和告警 -->
+            <div class="lg:col-span-1">
+                <!-- 设备详情卡片 -->
+                <div class="bg-white rounded-lg card-shadow p-4 mb-6" id="detail-card">
+                    <h2 class="text-lg font-bold mb-4 flex items-center">
+                        <i class="fa fa-plug text-primary mr-2"></i>
+                        设备详情
+                        <button class="ml-auto text-xs text-primary border border-primary rounded px-2 py-0.5">
+                            编辑信息
+                        </button>
+                    </h2>
+                    <div class="text-center py-8 text-normal" id="empty-detail">
+                        <i class="fa fa-info-circle text-3xl mb-2"></i>
+                        <p>点击列表中的设备查看详情</p>
+                    </div>
+                    <div class="hidden" id="device-detail">
+                        <div class="space-y-3">
+                            <div class="flex justify-between">
+                                <span class="text-normal">设备编号</span>
+                                <span class="font-medium" id="detail-id">CD-001</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-normal">所属区域</span>
+                                <span class="font-medium" id="detail-area">A区</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-normal">设备状态</span>
+                                <span class="font-medium" id="detail-status">
+                                    <span class="status-dot bg-warning mr-1"></span>
+                                    充电中
+                                </span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-normal">充电功率</span>
+                                <span class="font-medium" id="detail-power">60kW</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-normal">电压/电流</span>
+                                <span class="font-medium" id="detail-voltage">380V / 158A</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-normal">累计充电量</span>
+                                <span class="font-medium" id="detail-total">1286 kWh</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-normal">运行时长</span>
+                                <span class="font-medium" id="detail-running">3286 小时</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-normal">最后维护时间</span>
+                                <span class="font-medium" id="detail-maintain">2026-02-15</span>
+                            </div>
+                        </div>
+                        
+                        <!-- 实时数据监控 -->
+                        <div class="mt-6">
+                            <h3 class="font-medium mb-2">实时数据监控</h3>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div class="bg-gray-50 rounded p-2">
+                                    <p class="text-xs text-normal">温度</p>
+                                    <p class="font-medium text-lg" id="detail-temp">38°C</p>
+                                </div>
+                                <div class="bg-gray-50 rounded p-2">
+                                    <p class="text-xs text-normal">湿度</p>
+                                    <p class="font-medium text-lg" id="detail-humidity">45%</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 告警中心 -->
+                <div class="bg-white rounded-lg card-shadow p-4">
+                    <h2 class="text-lg font-bold mb-4 flex items-center">
+                        <i class="fa fa-bell text-warning mr-2"></i>
+                        告警中心
+                    </h2>
+                    <div class="space-y-3 max-h-80 overflow-y-auto">
+                        <!-- 紧急告警 -->
+                        <div class="border-l-4 border-danger bg-danger/5 p-3 rounded-r hover:bg-danger/10 transition-colors cursor-pointer">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="font-medium">设备故障告警</p>
+                                    <p class="text-xs text-normal mt-1">CD-004 过温保护触发 - C区</p>
+                                </div>
+                                <span class="text-xs text-normal">10分钟前</span>
+                            </div>
+                        </div>
+                        <!-- 警告告警 -->
+                        <div class="border-l-4 border-warning bg-warning/5 p-3 rounded-r hover:bg-warning/10 transition-colors cursor-pointer">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="font-medium">设备离线告警</p>
+                                    <p class="text-xs text-normal mt-1">CD-005 网络断开 - B区</p>
+                                </div>
+                                <span class="text-xs text-normal">30分钟前</span>
+                            </div>
+                        </div>
+                        <!-- 提示告警 -->
+                        <div class="border-l-4 border-primary bg-primary/5 p-3 rounded-r hover:bg-primary/10 transition-colors cursor-pointer">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="font-medium">充电完成提醒</p>
+                                    <p class="text-xs text-normal mt-1">CD-012 充电完成 - A区</p>
+                                </div>
+                                <span class="text-xs text-normal">1小时前</span>
+                            </div>
+                        </div>
+                        <!-- 普通告警 -->
+                        <div class="border-l-4 border-normal bg-normal/5 p-3 rounded-r hover:bg-normal/10 transition-colors cursor-pointer">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="font-medium">维护提醒</p>
+                                    <p class="text-xs text-normal mt-1">CD-008 即将到达维护周期 - A区</p>
+                                </div>
+                                <span class="text-xs text-normal">2小时前</span>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="w-full mt-4 text-primary text-sm border border-primary rounded py-1 hover:bg-primary hover:text-white transition-colors">
+                        查看全部告警
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 故障处理弹窗 (默认隐藏) -->
+    <div id="fault-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg w-full max-w-md p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-danger">故障处理</h3>
+                <button onclick="closeModal()" class="text-normal hover:text-danger">
+                    <i class="fa fa-times text-xl"></i>
+                </button>
+            </div>
+            <div class="mb-4">
+                <p class="mb-2">设备编号：<span id="fault-id" class="font-medium">CD-004</span></p>
+                <p class="mb-4">故障类型：<span class="font-medium text-danger">过温保护触发</span></p>
+                <label class="block text-sm font-medium mb-1">处理状态</label>
+                <select class="w-full border border-gray-200 rounded px-3 py-2 mb-3">
+                    <option>待处理</option>
+                    <option>派单中</option>
+                    <option>维修中</option>
+                    <option>已修复</option>
+                </select>
+                <label class="block text-sm font-medium mb-1">处理备注</label>
+                <textarea class="w-full border border-gray-200 rounded px-3 py-2 h-20 mb-4"></textarea>
+            </div>
+            <div class="flex space-x-2">
+                <button onclick="closeModal()" class="flex-1 border border-gray-200 rounded py-2 text-normal hover:bg-gray-50 transition-colors">
+                    取消
+                </button>
+                <button class="flex-1 bg-danger text-white rounded py-2 hover:bg-danger/90 transition-colors">
+                    提交处理
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 脚本 -->
+    <script>
+        // 初始化图表
+        function initChart() {
+            const ctx = document.getElementById('chargingChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00'],
+                    datasets: [
+                        {
+                            label: '充电量(kWh)',
+                            data: [120, 80, 350, 420, 580, 320],
+                            backgroundColor: '#165DFF',
+                            borderRadius: 4
+                        },
+                        {
+                            label: '充电次数',
+                            data: [8, 5, 28, 35, 42, 25],
+                            backgroundColor: '#00B42A',
+                            borderRadius: 4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        // 查看设备详情
+        function viewDetail(deviceId) {
+            // 隐藏空提示，显示详情
+            document.getElementById('empty-detail').classList.add('hidden');
+            document.getElementById('device-detail').classList.remove('hidden');
+            
+            // 根据设备ID更新详情数据
+            const deviceData = {
+                '001': {
+                    id: 'CD-001',
+                    area: 'A区',
+                    status: '<span class="status-dot bg-warning mr-1"></span>充电中',
+                    power: '60kW',
+                    voltage: '380V / 158A',
+                    total: '1286 kWh',
+                    running: '3286 小时',
+                    maintain: '2026-02-15',
+                    temp: '38°C',
+                    humidity: '45%'
+                },
+                '002': {
+                    id: 'CD-002',
+                    area: 'A区',
+                    status: '<span class="status-dot bg-warning mr-1"></span>充电中',
+                    power: '40kW',
+                    voltage: '380V / 105A',
+                    total: '958 kWh',
+                    running: '2875 小时',
+                    maintain: '2026-02-10',
+                    temp: '35°C',
+                    humidity: '42%'
+                },
+                '003': {
+                    id: 'CD-003',
+                    area: 'B区',
+                    status: '<span class="status-dot bg-success mr-1"></span>空闲',
+                    power: '0kW',
+                    voltage: '380V / 0A',
+                    total: '865 kWh',
+                    running: '2150 小时',
+                    maintain: '2026-02-20',
+                    temp: '28°C',
+                    humidity: '40%'
+                },
+                '004': {
+                    id: 'CD-004',
+                    area: 'C区',
+                    status: '<span class="status-dot bg-danger mr-1"></span>故障',
+                    power: '0kW',
+                    voltage: '0V / 0A',
+                    total: '1560 kWh',
+                    running: '3890 小时',
+                    maintain: '2026-01-18',
+                    temp: '65°C',
+                    humidity: '38%'
+                },
+                '005': {
+                    id: 'CD-005',
+                    area: 'B区',
+                    status: '<span class="status-dot bg-normal mr-1"></span>离线',
+                    power: '0kW',
+                    voltage: '0V / 0A',
+                    total: '780 kWh',
+                    running: '1980 小时',
+                    maintain: '2026-01-25',
+                    temp: '--',
+                    humidity: '--'
+                }
+            };
+            
+            const data = deviceData[deviceId];
+            document.getElementById('detail-id').textContent = data.id;
+            document.getElementById('detail-area').textContent = data.area;
+            document.getElementById('detail-status').innerHTML = data.status;
+            document.getElementById('detail-power').textContent = data.power;
+            document.getElementById('detail-voltage').textContent = data.voltage;
+            document.getElementById('detail-total').textContent = data.total;
+            document.getElementById('detail-running').textContent = data.running;
+            document.getElementById('detail-maintain').textContent = data.maintain;
+            document.getElementById('detail-temp').textContent = data.temp;
+            document.getElementById('detail-humidity').textContent = data.humidity;
+        }
+
+        // 处理故障
+        function handleFault(deviceId) {
+            document.getElementById('fault-id').textContent = `CD-${deviceId}`;
+            document.getElementById('fault-modal').classList.remove('hidden');
+        }
+
+        // 关闭弹窗
+        function closeModal() {
+            document.getElementById('fault-modal').classList.add('hidden');
+        }
+
+        // 页面加载完成初始化
+        window.addEventListener('DOMContentLoaded', function() {
+            initChart();
+            
+            // 点击列表行高亮
+            const rows = document.querySelectorAll('#charger-list tr');
+            rows.forEach(row => {
+                row.addEventListener('click', function() {
+                    rows.forEach(r => r.classList.remove('bg-primary/5'));
+                    this.classList.add('bg-primary/5');
+                    const deviceId = this.dataset.id;
+                    viewDetail(deviceId);
+                });
+            });
+        });
+    </script>
+</body>
+</html>
