@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>商业综合体智慧防控系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Microsoft Yahei', sans-serif;
+        }
+
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        /* 顶部导航栏 */
+        header {
+            background: linear-gradient(135deg, #0f3460, #1a5276);
+            color: white;
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo-icon {
+            font-size: 1.8rem;
+        }
+
+        .logo-text {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        /* 主内容区 */
+        .container {
+            max-width: 1400px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+
+        /* 概览面板 */
+        .overview-panel {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .overview-title {
+            font-size: 2rem;
+            color: #0f3460;
+            margin-bottom: 1rem;
+        }
+
+        .overview-desc {
+            color: #555;
+            max-width: 800px;
+            margin: 0 auto 2rem;
+        }
+
+        /* 防控模块网格 */
+        .modules-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        /* 模块卡片样式 */
+        .module-card {
+            background: white;
+            border-radius: 10px;
+            padding: 1.5rem;
+            box-shadow: 0 3px 15px rgba(0,0,0,0.05);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-left: 4px solid #3498db;
+        }
+
+        .module-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+
+        .module-card.active {
+            border-left: 4px solid #27ae60;
+            background-color: #f8fff9;
+        }
+
+        .module-icon {
+            font-size: 2.5rem;
+            color: #3498db;
+            margin-bottom: 1rem;
+        }
+
+        .module-title {
+            font-size: 1.3rem;
+            color: #2c3e50;
+            margin-bottom: 0.8rem;
+            font-weight: 600;
+        }
+
+        .module-desc {
+            color: #666;
+            font-size: 0.95rem;
+            margin-bottom: 1rem;
+        }
+
+        /* 详情面板 */
+        .detail-panel {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+            display: none;
+            margin-bottom: 2rem;
+        }
+
+        .detail-panel.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .detail-title {
+            font-size: 1.8rem;
+            color: #0f3460;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .detail-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+
+        @media (max-width: 768px) {
+            .detail-content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .detail-text {
+            color: #444;
+            line-height: 1.8;
+        }
+
+        .detail-features {
+            margin-top: 1rem;
+        }
+
+        .detail-features li {
+            margin-bottom: 0.8rem;
+            list-style-type: none;
+            position: relative;
+            padding-left: 1.5rem;
+        }
+
+        .detail-features li:before {
+            content: "✓";
+            color: #27ae60;
+            font-weight: bold;
+            position: absolute;
+            left: 0;
+        }
+
+        .detail-image {
+            background-color: #f0f7ff;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            min-height: 250px;
+        }
+
+        .image-placeholder {
+            color: #3498db;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+
+        .image-placeholder i {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            display: block;
+        }
+
+        /* 底部信息 */
+        footer {
+            text-align: center;
+            padding: 2rem;
+            color: #777;
+            border-top: 1px solid #eee;
+            margin-top: 2rem;
+        }
+
+        /* 按钮样式 */
+        .back-btn {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            margin-top: 1rem;
+            transition: background-color 0.3s ease;
+        }
+
+        .back-btn:hover {
+            background-color: #2980b9;
+        }
+    </style>
+    <!-- 引入图标库 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- 顶部导航 -->
+    <header>
+        <div class="header-container">
+            <div class="logo">
+                <span class="logo-icon"><i class="fas fa-shield-alt"></i></span>
+                <span class="logo-text">商业综合体智慧防控系统</span>
+            </div>
+            <div class="status">
+                <i class="fas fa-check-circle"></i> 系统运行正常
+            </div>
+        </div>
+    </header>
+
+    <!-- 主内容区 -->
+    <div class="container">
+        <!-- 概览面板 -->
+        <div class="overview-panel">
+            <h1 class="overview-title">商业综合体智慧防控解决方案</h1>
+            <p class="overview-desc">
+                基于物联网、人工智能、大数据分析等技术，构建全方位、智能化、一体化的商业综合体防控体系，
+                实现安防监控、消防预警、人流管控、应急响应等功能的智能联动，保障商业综合体运营安全。
+            </p>
+        </div>
+
+        <!-- 防控模块网格 -->
+        <div class="modules-grid">
+            <!-- 安防监控模块 -->
+            <div class="module-card" data-module="security">
+                <div class="module-icon"><i class="fas fa-video"></i></div>
+                <h3 class="module-title">智能安防监控</h3>
+                <p class="module-desc">AI视频分析、异常行为识别、重点区域监控、智能巡更</p>
+            </div>
+
+            <!-- 消防预警模块 -->
+            <div class="module-card" data-module="fire">
+                <div class="module-icon"><i class="fas fa-fire-extinguisher"></i></div>
+                <h3 class="module-title">智能消防预警</h3>
+                <p class="module-desc">烟感监测、温湿度检测、消防通道监测、自动报警</p>
+            </div>
+
+            <!-- 人流管控模块 -->
+            <div class="module-card" data-module="crowd">
+                <div class="module-icon"><i class="fas fa-users"></i></div>
+                <h3 class="module-title">智能人流管控</h3>
+                <p class="module-desc">客流统计、密度分析、拥堵预警、智能疏导</p>
+            </div>
+
+            <!-- 应急响应模块 -->
+            <div class="module-card" data-module="emergency">
+                <div class="module-icon"><i class="fas fa-ambulance"></i></div>
+                <h3 class="module-title">智能应急响应</h3>
+                <p class="module-desc">一键报警、应急广播、疏散路径规划、多方联动</p>
+            </div>
+
+            <!-- 设备管理模块 -->
+            <div class="module-card" data-module="equipment">
+                <div class="module-icon"><i class="fas fa-cogs"></i></div>
+                <h3 class="module-title">设备智能管理</h3>
+                <p class="module-desc">设备状态监测、故障预警、远程控制、维保管理</p>
+            </div>
+
+            <!-- 数据分析模块 -->
+            <div class="module-card" data-module="data">
+                <div class="module-icon"><i class="fas fa-chart-line"></i></div>
+                <h3 class="module-title">防控数据分析</h3>
+                <p class="module-desc">风险评估、趋势分析、报表生成、决策支持</p>
+            </div>
+        </div>
+
+        <!-- 详情面板 -->
+        <div id="security-detail" class="detail-panel">
+            <h2 class="detail-title"><i class="fas fa-video"></i> 智能安防监控</h2>
+            <div class="detail-content">
+                <div class="detail-text">
+                    <p>智能安防监控系统是商业综合体智慧防控的核心组成部分，通过部署高清摄像头、AI分析终端和智能识别算法，实现对综合体内部及周边区域的全方位监控。</p>
+                    <ul class="detail-features">
+                        <li>人脸识别：快速识别黑名单人员、重点关注人员</li>
+                        <li>异常行为检测：自动识别奔跑、聚集、翻越、破坏等异常行为</li>
+                        <li>物品遗留检测：识别可疑遗留包裹、物品并及时报警</li>
+                        <li>周界防范：防止非法入侵，支持电子围栏设置</li>
+                        <li>智能巡更：替代传统人工巡更，提高巡更效率和覆盖率</li>
+                        <li>视频联动：报警时自动调取相关区域视频画面</li>
+                    </ul>
+                </div>
+                <div class="detail-image">
+                    <div class="image-placeholder">
+                        <i class="fas fa-video"></i>
+                        <p>智能安防监控示意图</p>
+                        <p>AI视频分析平台界面</p>
+                    </div>
+                </div>
+            </div>
+            <button class="back-btn" onclick="hideDetail()">返回</button>
+        </div>
+
+        <div id="fire-detail" class="detail-panel">
+            <h2 class="detail-title"><i class="fas fa-fire-extinguisher"></i> 智能消防预警</h2>
+            <div class="detail-content">
+                <div class="detail-text">
+                    <p>智能消防预警系统集成了多种传感器和智能分析技术，能够实时监测商业综合体的消防安全状况，实现火灾的早期预警和快速处置。</p>
+                    <ul class="detail-features">
+                        <li>烟感温感监测：多点布设传感器，实时监测烟雾和温度异常</li>
+                        <li>燃气泄漏检测：监测燃气管道泄漏情况，及时报警</li>
+                        <li>消防通道监测：确保消防通道畅通，识别占用行为</li>
+                        <li>消防设施巡检：自动监测灭火器、消防栓状态</li>
+                        <li>智能报警：分级报警机制，联动声光报警和通知系统</li>
+                        <li>逃生路径规划：火灾时自动计算最优疏散路径</li>
+                    </ul>
+                </div>
+                <div class="detail-image">
+                    <div class="image-placeholder">
+                        <i class="fas fa-fire-extinguisher"></i>
+                        <p>智能消防预警系统架构图</p>
+                        <p>消防监测数据可视化界面</p>
+                    </div>
+                </div>
+            </div>
+            <button class="back-btn" onclick="hideDetail()">返回</button>
+        </div>
+
+        <div id="crowd-detail" class="detail-panel">
+            <h2 class="detail-title"><i class="fas fa-users"></i> 智能人流管控</h2>
+            <div class="detail-content">
+                <div class="detail-text">
+                    <p>智能人流管控系统通过视频分析和传感器技术，实时统计和分析商业综合体内部的人员流动情况，有效预防拥挤踩踏等安全事故。</p>
+                    <ul class="detail-features">
+                        <li>精准客流统计：进出人数、区域客流、滞留时间分析</li>
+                        <li>人群密度分析：实时监测各区域人员密度，设置预警阈值</li>
+                        <li>拥堵预警：自动识别拥堵区域，提前预警并启动疏导措施</li>
+                        <li>热区分析：分析人员聚集热点，优化商业布局和安保部署</li>
+                        <li>智能疏导：通过广播、导航屏引导人员分流</li>
+                        <li>峰值预测：基于历史数据预测客流高峰，提前做好准备</li>
+                    </ul>
+                </div>
+                <div class="detail-image">
+                    <div class="image-placeholder">
+                        <i class="fas fa-users"></i>
+                        <p>人流密度热力图</p>
+                        <p>客流分析仪表盘</p>
+                    </div>
+                </div>
+            </div>
+            <button class="back-btn" onclick="hideDetail()">返回</button>
+        </div>
+
+        <div id="emergency-detail" class="detail-panel">
+            <h2 class="detail-title"><i class="fas fa-ambulance"></i> 智能应急响应</h2>
+            <div class="detail-content">
+                <div class="detail-text">
+                    <p>智能应急响应系统构建了一体化的应急处置体系，能够在突发事件发生时快速响应、高效处置，最大限度减少损失。</p>
+                    <ul class="detail-features">
+                        <li>一键报警：紧急情况下一键触发多渠道报警</li>
+                        <li>应急广播：定向或全区域语音广播，引导人员疏散</li>
+                        <li>多方联动：自动通知安保、消防、医疗等相关人员</li>
+                        <li>视频指挥：现场视频实时回传，远程指挥决策</li>
+                        <li>电子预案：数字化应急预案，一键启动处置流程</li>
+                        <li>事后复盘：事件全过程记录，便于分析和改进</li>
+                    </ul>
+                </div>
+                <div class="detail-image">
+                    <div class="image-placeholder">
+                        <i class="fas fa-ambulance"></i>
+                        <p>应急指挥中心界面</p>
+                        <p>疏散路径规划示意图</p>
+                    </div>
+                </div>
+            </div>
+            <button class="back-btn" onclick="hideDetail()">返回</button>
+        </div>
+
+        <div id="equipment-detail" class="detail-panel">
+            <h2 class="detail-title"><i class="fas fa-cogs"></i> 设备智能管理</h2>
+            <div class="detail-content">
+                <div class="detail-text">
+                    <p>设备智能管理系统实现对商业综合体各类防控设备的全生命周期管理，确保设备始终处于良好运行状态。</p>
+                    <ul class="detail-features">
+                        <li>状态监测：实时监测设备运行参数，识别异常状态</li>
+                        <li>故障预警：基于数据分析预测设备故障，提前维护</li>
+                        <li>远程控制：支持设备远程开关、参数调整等操作</li>
+                        <li>维保管理：自动生成维保计划，记录维保历史</li>
+                        <li>资产台账：建立完整的设备资产档案，便于管理</li>
+                        <li>能耗管理：监测设备能耗，优化运行策略</li>
+                    </ul>
+                </div>
+                <div class="detail-image">
+                    <div class="image-placeholder">
+                        <i class="fas fa-cogs"></i>
+                        <p>设备管理平台界面</p>
+                        <p>设备状态监测仪表盘</p>
+                    </div>
+                </div>
+            </div>
+            <button class="back-btn" onclick="hideDetail()">返回</button>
+        </div>
+
+        <div id="data-detail" class="detail-panel">
+            <h2 class="detail-title"><i class="fas fa-chart-line"></i> 防控数据分析</h2>
+            <div class="detail-content">
+                <div class="detail-text">
+                    <p>防控数据分析系统通过对各类防控数据的深度挖掘和分析，为商业综合体的安全管理提供数据支撑和决策依据。</p>
+                    <ul class="detail-features">
+                        <li>风险评估：多维度评估综合体安全风险等级</li>
+                        <li>趋势分析：分析安全事件发生趋势，识别规律</li>
+                        <li>报表生成：自动生成各类安全管理报表</li>
+                        <li>可视化展示：通过图表直观展示各类数据</li>
+                        <li>决策支持：基于数据分析提供管理优化建议</li>
+                        <li>对比分析：不同时段、不同区域数据对比</li>
+                    </ul>
+                </div>
+                <div class="detail-image">
+                    <div class="image-placeholder">
+                        <i class="fas fa-chart-line"></i>
+                        <p>防控数据分析仪表盘</p>
+                        <p>风险评估报告示例</p>
+                    </div>
+                </div>
+            </div>
+            <button class="back-btn" onclick="hideDetail()">返回</button>
+        </div>
+    </div>
+
+    <!-- 底部信息 -->
+    <footer>
+        <p>商业综合体智慧防控系统 &copy; 2026 版权所有</p>
+        <p>本系统仅用于展示，实际部署需结合具体场景定制</p>
+    </footer>
+
+    <script>
+        // 获取所有模块卡片
+        const moduleCards = document.querySelectorAll('.module-card');
+        // 获取所有详情面板
+        const detailPanels = document.querySelectorAll('.detail-panel');
+
+        // 为每个模块卡片添加点击事件
+        moduleCards.forEach(card => {
+            card.addEventListener('click', function() {
+                // 移除所有卡片的active类
+                moduleCards.forEach(c => c.classList.remove('active'));
+                // 给当前点击的卡片添加active类
+                this.classList.add('active');
+                
+                // 隐藏所有详情面板
+                detailPanels.forEach(panel => panel.classList.remove('active'));
+                
+                // 显示对应的详情面板
+                const moduleName = this.getAttribute('data-module');
+                const targetPanel = document.getElementById(`${moduleName}-detail`);
+                targetPanel.classList.add('active');
+                
+                // 滚动到详情面板位置
+                targetPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+        });
+
+        // 隐藏详情面板的函数
+        function hideDetail() {
+            // 移除所有卡片的active类
+            moduleCards.forEach(c => c.classList.remove('active'));
+            // 隐藏所有详情面板
+            detailPanels.forEach(panel => panel.classList.remove('active'));
+            
+            // 滚动回顶部
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // 页面加载完成后的初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('商业综合体智慧防控系统加载完成');
+        });
+    </script>
+</body>
+</html>
