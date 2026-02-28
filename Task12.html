@@ -1,0 +1,1262 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Qore-learning神经网络 - 锂电池寿命预测系统</title>
+    <!-- 引入Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入Font Awesome图标 -->
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <!-- 引入Chart.js图表库 -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+    
+    <!-- 自定义Tailwind配置 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        qore: {
+                            primary: '#6366F1', // Qore主色调-紫蓝
+                            secondary: '#818CF8',
+                            accent: '#A5B4FC',
+                            dark: '#4F46E5',
+                            light: '#EEF2FF'
+                        },
+                        battery: {
+                            healthy: '#10B981', // 健康-绿色
+                            warning: '#F59E0B', // 警告-黄色
+                            danger: '#EF4444',  // 危险-红色
+                            normal: '#6B7280'   // 正常-灰色
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['Consolas', 'Monaco', 'monospace']
+                    },
+                }
+            }
+        }
+    </script>
+    
+    <!-- 自定义工具类 -->
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .neuron-node {
+                width: 12px;
+                height: 12px;
+                border-radius: 50%;
+                background-color: #6366F1;
+                display: inline-block;
+                transition: all 0.3s ease;
+            }
+            .neuron-node.active {
+                background-color: #4F46E5;
+                transform: scale(1.3);
+                box-shadow: 0 0 8px rgba(99, 102, 241, 0.8);
+            }
+            .connection-line {
+                height: 2px;
+                background: linear-gradient(90deg, #818CF8, #6366F1);
+                margin: 0 4px;
+                display: inline-block;
+                vertical-align: middle;
+                transition: opacity 0.3s ease;
+            }
+            .prediction-card {
+                transition: all 0.3s ease;
+            }
+            .prediction-card:hover {
+                transform: translateY(-4px);
+                box-shadow: 0 8px 24px rgba(99, 102, 241, 0.15);
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans text-gray-800">
+    <!-- 顶部导航栏 -->
+    <header class="bg-white shadow-md sticky top-0 z-50">
+        <div class="container mx-auto px-4 py-4 flex flex-col md:flex-row items-center justify-between">
+            <div class="flex items-center space-x-3 mb-3 md:mb-0">
+                <div class="w-10 h-10 rounded-full bg-qore-primary/10 flex items-center justify-center text-qore-primary">
+                    <i class="fa fa-battery-three-quarters text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold text-qore-primary">Qore-learning神经网络</h1>
+                    <p class="text-sm text-gray-500">锂电池寿命智能预测系统</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-6">
+                <nav class="hidden md:flex space-x-4">
+                    <a href="#dashboard" class="text-qore-primary font-medium border-b-2 border-qore-primary px-1">数据看板</a>
+                    <a href="#model" class="text-gray-600 hover:text-qore-primary transition-colors px-1">模型架构</a>
+                    <a href="#prediction" class="text-gray-600 hover:text-qore-primary transition-colors px-1">寿命预测</a>
+                    <a href="#analysis" class="text-gray-600 hover:text-qore-primary transition-colors px-1">数据分析</a>
+                </nav>
+                <div class="flex items-center space-x-3">
+                    <button class="bg-qore-light text-qore-primary rounded-full px-3 py-1 text-sm flex items-center hover:bg-qore-primary hover:text-white transition-colors">
+                        <i class="fa fa-refresh mr-1"></i> 刷新数据
+                    </button>
+                    <div class="hidden md:flex items-center space-x-2">
+                        <img src="https://picsum.photos/id/1012/40/40" alt="用户头像" class="w-8 h-8 rounded-full">
+                        <span class="font-medium">算法工程师</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主要内容区域 -->
+    <main class="container mx-auto px-4 py-6">
+        <!-- 数据概览看板 -->
+        <section id="dashboard" class="mb-8">
+            <h2 class="text-xl font-bold mb-6 flex items-center">
+                <i class="fa fa-dashboard text-qore-primary mr-2"></i>
+                电池运行状态概览
+            </h2>
+            
+            <!-- 核心指标卡片 -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                <!-- 电池总数 -->
+                <div class="bg-white rounded-lg shadow-md p-4 prediction-card">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-gray-500 text-sm">监测电池总数</p>
+                            <h3 class="text-3xl font-bold mt-1">256</h3>
+                            <p class="text-battery-healthy text-xs mt-2"><i class="fa fa-check-circle"></i> 正常运行 248 组</p>
+                        </div>
+                        <div class="w-10 h-10 rounded-full bg-qore-light flex items-center justify-center text-qore-primary">
+                            <i class="fa fa-cubes text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 健康电池 -->
+                <div class="bg-white rounded-lg shadow-md p-4 prediction-card">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-gray-500 text-sm">健康电池占比</p>
+                            <h3 class="text-3xl font-bold mt-1">89%</h3>
+                            <p class="text-battery-healthy text-xs mt-2"><i class="fa fa-arrow-up"></i> 较上周 +2.3%</p>
+                        </div>
+                        <div class="w-10 h-10 rounded-full bg-battery-healthy/10 flex items-center justify-center text-battery-healthy">
+                            <i class="fa fa-heartbeat text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 预警电池 -->
+                <div class="bg-white rounded-lg shadow-md p-4 prediction-card">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-gray-500 text-sm">寿命预警电池</p>
+                            <h3 class="text-3xl font-bold mt-1">12</h3>
+                            <p class="text-battery-warning text-xs mt-2"><i class="fa fa-exclamation-triangle"></i> 需要重点关注</p>
+                        </div>
+                        <div class="w-10 h-10 rounded-full bg-battery-warning/10 flex items-center justify-center text-battery-warning">
+                            <i class="fa fa-bell text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 失效风险 -->
+                <div class="bg-white rounded-lg shadow-md p-4 prediction-card">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-gray-500 text-sm">高失效风险</p>
+                            <h3 class="text-3xl font-bold mt-1">8</h3>
+                            <p class="text-battery-danger text-xs mt-2"><i class="fa fa-arrow-down"></i> 较上周 -1</p>
+                        </div>
+                        <div class="w-10 h-10 rounded-full bg-battery-danger/10 flex items-center justify-center text-battery-danger">
+                            <i class="fa fa-exclamation-circle text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 电池健康度分布图表 -->
+            <div class="bg-white rounded-lg shadow-md p-4 mb-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="font-bold">电池健康度分布</h3>
+                    <div class="flex space-x-2">
+                        <button class="text-sm bg-qore-light text-qore-primary rounded px-3 py-1 hover:bg-qore-primary hover:text-white transition-colors">月度</button>
+                        <button class="text-sm text-gray-600 rounded px-3 py-1 hover:bg-qore-light hover:text-qore-primary transition-colors">季度</button>
+                        <button class="text-sm text-gray-600 rounded px-3 py-1 hover:bg-qore-light hover:text-qore-primary transition-colors">年度</button>
+                    </div>
+                </div>
+                <div class="h-64">
+                    <canvas id="healthDistributionChart"></canvas>
+                </div>
+            </div>
+            
+            <!-- 电池列表 -->
+            <div class="bg-white rounded-lg shadow-md p-4">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="font-bold">电池组实时状态</h3>
+                    <div class="flex space-x-2">
+                        <select class="border border-gray-200 rounded px-2 py-1 text-sm">
+                            <option>全部状态</option>
+                            <option>健康</option>
+                            <option>预警</option>
+                            <option>高风险</option>
+                        </select>
+                        <input type="text" placeholder="搜索电池编号" class="border border-gray-200 rounded px-2 py-1 text-sm w-40">
+                    </div>
+                </div>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr class="border-b border-gray-200">
+                                <th class="text-left py-2 px-1 font-medium">电池编号</th>
+                                <th class="text-left py-2 px-1 font-medium">类型</th>
+                                <th class="text-left py-2 px-1 font-medium">健康度</th>
+                                <th class="text-left py-2 px-1 font-medium">剩余寿命</th>
+                                <th class="text-left py-2 px-1 font-medium">循环次数</th>
+                                <th class="text-left py-2 px-1 font-medium">状态</th>
+                                <th class="text-left py-2 px-1 font-medium">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="battery-list">
+                            <!-- 健康电池 -->
+                            <tr class="border-b border-gray-100 hover:bg-gray-50 cursor-pointer" data-id="BT-001">
+                                <td class="py-3 px-1">BT-001</td>
+                                <td class="py-3 px-1">三元锂</td>
+                                <td class="py-3 px-1">
+                                    <div class="w-24 bg-gray-200 rounded-full h-2">
+                                        <div class="bg-battery-healthy h-2 rounded-full" style="width: 92%"></div>
+                                    </div>
+                                    <span class="text-battery-healthy text-xs">92%</span>
+                                </td>
+                                <td class="py-3 px-1">
+                                    <span class="font-medium">2.8年</span>
+                                </td>
+                                <td class="py-3 px-1">1256</td>
+                                <td class="py-3 px-1">
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-battery-healthy/10 text-battery-healthy">
+                                        <span class="w-2 h-2 rounded-full bg-battery-healthy mr-1"></span>
+                                        健康
+                                    </span>
+                                </td>
+                                <td class="py-3 px-1">
+                                    <button class="text-qore-primary mr-2" onclick="viewBatteryDetail('BT-001')">
+                                        <i class="fa fa-bar-chart"></i>
+                                    </button>
+                                    <button class="text-gray-500" onclick="predictLifetime('BT-001')">
+                                        <i class="fa fa-calculator"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            <!-- 预警电池 -->
+                            <tr class="border-b border-gray-100 hover:bg-gray-50 cursor-pointer" data-id="BT-028">
+                                <td class="py-3 px-1">BT-028</td>
+                                <td class="py-3 px-1">磷酸铁锂</td>
+                                <td class="py-3 px-1">
+                                    <div class="w-24 bg-gray-200 rounded-full h-2">
+                                        <div class="bg-battery-warning h-2 rounded-full" style="width: 65%"></div>
+                                    </div>
+                                    <span class="text-battery-warning text-xs">65%</span>
+                                </td>
+                                <td class="py-3 px-1">
+                                    <span class="font-medium">0.8年</span>
+                                </td>
+                                <td class="py-3 px-1">3852</td>
+                                <td class="py-3 px-1">
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-battery-warning/10 text-battery-warning">
+                                        <span class="w-2 h-2 rounded-full bg-battery-warning mr-1"></span>
+                                        预警
+                                    </span>
+                                </td>
+                                <td class="py-3 px-1">
+                                    <button class="text-qore-primary mr-2" onclick="viewBatteryDetail('BT-028')">
+                                        <i class="fa fa-bar-chart"></i>
+                                    </button>
+                                    <button class="text-gray-500" onclick="predictLifetime('BT-028')">
+                                        <i class="fa fa-calculator"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            <!-- 高风险电池 -->
+                            <tr class="border-b border-gray-100 hover:bg-gray-50 cursor-pointer" data-id="BT-105">
+                                <td class="py-3 px-1">BT-105</td>
+                                <td class="py-3 px-1">三元锂</td>
+                                <td class="py-3 px-1">
+                                    <div class="w-24 bg-gray-200 rounded-full h-2">
+                                        <div class="bg-battery-danger h-2 rounded-full" style="width: 38%"></div>
+                                    </div>
+                                    <span class="text-battery-danger text-xs">38%</span>
+                                </td>
+                                <td class="py-3 px-1">
+                                    <span class="font-medium">0.3年</span>
+                                </td>
+                                <td class="py-3 px-1">5280</td>
+                                <td class="py-3 px-1">
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-battery-danger/10 text-battery-danger">
+                                        <span class="w-2 h-2 rounded-full bg-battery-danger mr-1"></span>
+                                        高风险
+                                    </span>
+                                </td>
+                                <td class="py-3 px-1">
+                                    <button class="text-qore-primary mr-2" onclick="viewBatteryDetail('BT-105')">
+                                        <i class="fa fa-bar-chart"></i>
+                                    </button>
+                                    <button class="text-gray-500" onclick="predictLifetime('BT-105')">
+                                        <i class="fa fa-calculator"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- 分页 -->
+                <div class="flex justify-between items-center mt-4 text-sm">
+                    <p class="text-gray-500">共256条记录，显示1-3条</p>
+                    <div class="flex space-x-1">
+                        <button class="w-8 h-8 rounded border border-gray-200 flex items-center justify-center hover:bg-qore-primary hover:text-white hover:border-qore-primary transition-colors">
+                            <i class="fa fa-angle-left"></i>
+                        </button>
+                        <button class="w-8 h-8 rounded bg-qore-primary text-white flex items-center justify-center">1</button>
+                        <button class="w-8 h-8 rounded border border-gray-200 flex items-center justify-center hover:bg-qore-primary hover:text-white hover:border-qore-primary transition-colors">2</button>
+                        <button class="w-8 h-8 rounded border border-gray-200 flex items-center justify-center hover:bg-qore-primary hover:text-white hover:border-qore-primary transition-colors">3</button>
+                        <button class="w-8 h-8 rounded border border-gray-200 flex items-center justify-center hover:bg-qore-primary hover:text-white hover:border-qore-primary transition-colors">
+                            <i class="fa fa-angle-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Qore-learning模型架构 -->
+        <section id="model" class="mb-8">
+            <h2 class="text-xl font-bold mb-6 flex items-center">
+                <i class="fa fa-sitemap text-qore-primary mr-2"></i>
+                Qore-learning神经网络架构
+            </h2>
+            
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <!-- 模型简介 -->
+                <div class="mb-6">
+                    <h3 class="font-bold mb-2">Qore-learning核心特点</h3>
+                    <p class="text-gray-600 mb-4">Qore-learning是一种基于强化学习与深度学习融合的新型神经网络架构，专为锂电池寿命预测优化设计，具有自适应学习、多维度特征提取、长短期记忆融合等核心优势。</p>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="bg-qore-light/30 rounded-lg p-3">
+                            <div class="flex items-center mb-2">
+                                <i class="fa fa-brain text-qore-primary mr-2"></i>
+                                <h4 class="font-medium">自适应学习</h4>
+                            </div>
+                            <p class="text-sm text-gray-600">根据电池运行数据动态调整网络权重，适应不同工况下的衰减规律</p>
+                        </div>
+                        <div class="bg-qore-light/30 rounded-lg p-3">
+                            <div class="flex items-center mb-2">
+                                <i class="fa fa-cubes text-qore-primary mr-2"></i>
+                                <h4 class="font-medium">多特征融合</h4>
+                            </div>
+                            <p class="text-sm text-gray-600">融合电压、电流、温度、循环次数等12+维度特征，提升预测精度</p>
+                        </div>
+                        <div class="bg-qore-light/30 rounded-lg p-3">
+                            <div class="flex items-center mb-2">
+                                <i class="fa fa-clock-o text-qore-primary mr-2"></i>
+                                <h4 class="font-medium">时序预测</h4>
+                            </div>
+                            <p class="text-sm text-gray-600">基于LSTM的时序建模，精准捕捉电池衰减的长期趋势</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 网络架构可视化 -->
+                <div class="mb-6">
+                    <h3 class="font-bold mb-4">网络层级结构</h3>
+                    <div class="relative py-8 px-4 bg-gray-50 rounded-lg">
+                        <!-- 输入层 -->
+                        <div class="mb-8" id="layer-input">
+                            <h4 class="text-center font-medium mb-3">输入层 (Input Layer)</h4>
+                            <div class="flex justify-center items-center space-x-1">
+                                <div class="neuron-node" data-feature="voltage"></div>
+                                <div class="connection-line w-4"></div>
+                                <div class="neuron-node" data-feature="current"></div>
+                                <div class="connection-line w-4"></div>
+                                <div class="neuron-node" data-feature="temperature"></div>
+                                <div class="connection-line w-4"></div>
+                                <div class="neuron-node" data-feature="cycle"></div>
+                                <div class="connection-line w-4"></div>
+                                <div class="neuron-node" data-feature="capacity"></div>
+                            </div>
+                            <p class="text-xs text-center text-gray-500 mt-2">电压 | 电流 | 温度 | 循环次数 | 容量</p>
+                        </div>
+                        
+                        <!-- 隐藏层1 -->
+                        <div class="mb-8" id="layer-hidden1">
+                            <h4 class="text-center font-medium mb-3">特征提取层 (Feature Extraction)</h4>
+                            <div class="flex justify-center items-center space-x-1">
+                                <div class="neuron-node"></div>
+                                <div class="connection-line w-2"></div>
+                                <div class="neuron-node"></div>
+                                <div class="connection-line w-2"></div>
+                                <div class="neuron-node"></div>
+                                <div class="connection-line w-2"></div>
+                                <div class="neuron-node"></div>
+                                <div class="connection-line w-2"></div>
+                                <div class="neuron-node"></div>
+                                <div class="connection-line w-2"></div>
+                                <div class="neuron-node"></div>
+                                <div class="connection-line w-2"></div>
+                                <div class="neuron-node"></div>
+                            </div>
+                            <p class="text-xs text-center text-gray-500 mt-2">128个Qore神经元 - 局部特征提取</p>
+                        </div>
+                        
+                        <!-- 隐藏层2 -->
+                        <div class="mb-8" id="layer-hidden2">
+                            <h4 class="text-center font-medium mb-3">时序融合层 (Temporal Fusion)</h4>
+                            <div class="flex justify-center items-center space-x-1">
+                                <div class="neuron-node"></div>
+                                <div class="connection-line w-2"></div>
+                                <div class="neuron-node"></div>
+                                <div class="connection-line w-2"></div>
+                                <div class="neuron-node"></div>
+                                <div class="connection-line w-2"></div>
+                                <div class="neuron-node"></div>
+                                <div class="connection-line w-2"></div>
+                                <div class="neuron-node"></div>
+                            </div>
+                            <p class="text-xs text-center text-gray-500 mt-2">64个Qore神经元 - LSTM时序融合</p>
+                        </div>
+                        
+                        <!-- 输出层 -->
+                        <div id="layer-output">
+                            <h4 class="text-center font-medium mb-3">输出层 (Output Layer)</h4>
+                            <div class="flex justify-center items-center space-x-1">
+                                <div class="neuron-node"></div>
+                                <div class="connection-line w-4"></div>
+                                <div class="neuron-node"></div>
+                            </div>
+                            <p class="text-xs text-center text-gray-500 mt-2">剩余寿命(年) | 健康度(%)</p>
+                        </div>
+                        
+                        <!-- 层级连接线 -->
+                        <div class="absolute top-[100px] left-1/2 transform -translate-x-1/2 w-0.5 h-[60px] bg-qore-accent/50"></div>
+                        <div class="absolute top-[200px] left-1/2 transform -translate-x-1/2 w-0.5 h-[60px] bg-qore-accent/50"></div>
+                        <div class="absolute top-[300px] left-1/2 transform -translate-x-1/2 w-0.5 h-[60px] bg-qore-accent/50"></div>
+                    </div>
+                </div>
+                
+                <!-- 模型性能 -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <h3 class="font-bold mb-3">预测精度对比</h3>
+                        <div class="h-56">
+                            <canvas id="accuracyChart"></canvas>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="font-bold mb-3">模型优势</h3>
+                        <ul class="space-y-2 text-gray-700">
+                            <li class="flex items-start">
+                                <i class="fa fa-check-circle text-battery-healthy mt-1 mr-2"></i>
+                                <div>
+                                    <span class="font-medium">预测精度</span>：相较于传统CNN提升18.7%，平均误差±0.12年
+                                </div>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fa fa-check-circle text-battery-healthy mt-1 mr-2"></i>
+                                <div>
+                                    <span class="font-medium">训练效率</span>：自适应学习机制，训练时间减少40%
+                                </div>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fa fa-check-circle text-battery-healthy mt-1 mr-2"></i>
+                                <div>
+                                    <span class="font-medium">泛化能力</span>：支持多种类型锂电池，工况适应性强
+                                </div>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fa fa-check-circle text-battery-healthy mt-1 mr-2"></i>
+                                <div>
+                                    <span class="font-medium">实时性</span>：单次预测耗时≤50ms，支持在线实时监测
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 寿命预测交互区 -->
+        <section id="prediction" class="mb-8">
+            <h2 class="text-xl font-bold mb-6 flex items-center">
+                <i class="fa fa-line-chart text-qore-primary mr-2"></i>
+                锂电池寿命预测
+            </h2>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- 预测参数输入 -->
+                <div class="bg-white rounded-lg shadow-md p-4 lg:col-span-1">
+                    <h3 class="font-bold mb-4">预测参数配置</h3>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">电池编号</label>
+                            <input type="text" id="battery-id-input" value="BT-028" class="w-full border border-gray-200 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-qore-primary focus:border-transparent">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">电池类型</label>
+                            <select id="battery-type" class="w-full border border-gray-200 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-qore-primary focus:border-transparent">
+                                <option value="ternary">三元锂电池</option>
+                                <option value="lfp" selected>磷酸铁锂电池</option>
+                                <option value="lco">钴酸锂电池</option>
+                                <option value="nmc">镍锰钴锂电池</option>
+                            </select>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">当前循环次数</label>
+                                <input type="number" id="cycle-count" value="3852" class="w-full border border-gray-200 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-qore-primary focus:border-transparent">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">当前容量</label>
+                                <input type="number" id="capacity" value="82.5" step="0.1" class="w-full border border-gray-200 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-qore-primary focus:border-transparent">
+                                <span class="text-xs text-gray-500">Ah</span>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">工作温度</label>
+                                <input type="number" id="temperature" value="28" class="w-full border border-gray-200 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-qore-primary focus:border-transparent">
+                                <span class="text-xs text-gray-500">°C</span>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">充电倍率</label>
+                                <input type="number" id="charge-rate" value="1.2" step="0.1" class="w-full border border-gray-200 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-qore-primary focus:border-transparent">
+                                <span class="text-xs text-gray-500">C</span>
+                            </div>
+                        </div>
+                        
+                        <button id="predict-btn" class="w-full bg-qore-primary text-white font-medium py-2 px-4 rounded hover:bg-qore-dark transition-colors flex items-center justify-center">
+                            <i class="fa fa-cogs mr-2"></i> 运行Qore-learning预测
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- 预测结果展示 -->
+                <div class="bg-white rounded-lg shadow-md p-4 lg:col-span-2">
+                    <h3 class="font-bold mb-4 flex items-center">
+                        预测结果
+                        <span class="ml-2 text-xs bg-qore-light text-qore-primary px-2 py-1 rounded">Qore-learning v2.1</span>
+                    </h3>
+                    
+                    <div id="prediction-initial" class="text-center py-12 text-gray-500">
+                        <i class="fa fa-calculator text-4xl mb-3"></i>
+                        <p>配置预测参数并点击预测按钮</p>
+                        <p class="text-sm mt-1">基于Qore-learning神经网络的智能寿命预测</p>
+                    </div>
+                    
+                    <div id="prediction-loading" class="hidden text-center py-12 text-gray-500">
+                        <div class="animate-spin text-qore-primary text-4xl mb-3">
+                            <i class="fa fa-circle-o-notch"></i>
+                        </div>
+                        <p>Qore-learning模型推理中...</p>
+                        <div class="w-full bg-gray-200 rounded-full h-2 mt-4 mx-auto max-w-md">
+                            <div class="bg-qore-primary h-2 rounded-full animate-pulse" style="width: 75%"></div>
+                        </div>
+                    </div>
+                    
+                    <div id="prediction-result" class="hidden">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                            <!-- 剩余寿命 -->
+                            <div class="bg-qore-light/20 rounded-lg p-4 text-center">
+                                <p class="text-gray-500 text-sm">剩余寿命预测</p>
+                                <p class="text-4xl font-bold text-qore-primary mt-2" id="pred-lifetime">0.8年</p>
+                                <p class="text-xs text-gray-500 mt-1">约 <span id="pred-days">292</span> 天</p>
+                            </div>
+                            
+                            <!-- 健康度 -->
+                            <div class="bg-qore-light/20 rounded-lg p-4 text-center">
+                                <p class="text-gray-500 text-sm">电池健康度</p>
+                                <p class="text-4xl font-bold text-battery-warning mt-2" id="pred-health">65.2%</p>
+                                <div class="w-full bg-gray-200 rounded-full h-2 mt-2 mx-auto max-w-xs">
+                                    <div class="bg-battery-warning h-2 rounded-full" id="health-bar" style="width: 65.2%"></div>
+                                </div>
+                            </div>
+                            
+                            <!-- 失效风险 -->
+                            <div class="bg-qore-light/20 rounded-lg p-4 text-center">
+                                <p class="text-gray-500 text-sm">失效风险等级</p>
+                                <p class="text-4xl font-bold text-battery-warning mt-2" id="pred-risk">中风险</p>
+                                <p class="text-xs text-gray-500 mt-1">建议6个月内复检</p>
+                            </div>
+                        </div>
+                        
+                        <!-- 寿命衰减曲线 -->
+                        <div>
+                            <h4 class="font-medium mb-3">寿命衰减趋势预测</h4>
+                            <div class="h-64">
+                                <canvas id="lifetimeCurveChart"></canvas>
+                            </div>
+                        </div>
+                        
+                        <!-- 预测说明 -->
+                        <div class="mt-4 bg-gray-50 rounded-lg p-3 text-sm text-gray-600">
+                            <p class="font-medium mb-1">Qore-learning预测说明：</p>
+                            <ul class="list-disc list-inside space-y-1">
+                                <li>预测置信度：<span class="text-qore-primary font-medium">92.8%</span></li>
+                                <li>模型考虑了温度、充放电倍率、循环深度等12项关键因素</li>
+                                <li>建议根据预测结果制定维护计划，避免突发失效</li>
+                                <li>高风险电池建议提前更换，降低安全隐患</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 数据分析 -->
+        <section id="analysis" class="mb-8">
+            <h2 class="text-xl font-bold mb-6 flex items-center">
+                <i class="fa fa-pie-chart text-qore-primary mr-2"></i>
+                电池数据分析
+            </h2>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- 衰减因素分析 -->
+                <div class="bg-white rounded-lg shadow-md p-4">
+                    <h3 class="font-bold mb-4">寿命衰减关键因素分析</h3>
+                    <div class="h-64">
+                        <canvas id="factorAnalysisChart"></canvas>
+                    </div>
+                    <div class="mt-4 grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
+                        <div class="flex items-center">
+                            <span class="w-3 h-3 bg-qore-primary rounded-full mr-2"></span>
+                            <span>工作温度 (35%)</span>
+                        </div>
+                        <div class="flex items-center">
+                            <span class="w-3 h-3 bg-battery-warning rounded-full mr-2"></span>
+                            <span>充电倍率 (28%)</span>
+                        </div>
+                        <div class="flex items-center">
+                            <span class="w-3 h-3 bg-battery-healthy rounded-full mr-2"></span>
+                            <span>循环次数 (22%)</span>
+                        </div>
+                        <div class="flex items-center">
+                            <span class="w-3 h-3 bg-gray-400 rounded-full mr-2"></span>
+                            <span>其他因素 (15%)</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 维护建议 -->
+                <div class="bg-white rounded-lg shadow-md p-4">
+                    <h3 class="font-bold mb-4">电池维护优化建议</h3>
+                    
+                    <div class="space-y-4">
+                        <div class="border-l-4 border-qore-primary pl-3 py-1">
+                            <h4 class="font-medium">温度控制优化</h4>
+                            <p class="text-sm text-gray-600">将电池工作温度控制在25±5°C，可延长寿命约30%。建议增加散热系统，避免高温运行。</p>
+                        </div>
+                        
+                        <div class="border-l-4 border-battery-warning pl-3 py-1">
+                            <h4 class="font-medium">充电策略调整</h4>
+                            <p class="text-sm text-gray-600">采用0.5C慢充策略，避免快充占比超过30%，可有效降低容量衰减速度。</p>
+                        </div>
+                        
+                        <div class="border-l-4 border-battery-healthy pl-3 py-1">
+                            <h4 class="font-medium">定期维护计划</h4>
+                            <p class="text-sm text-gray-600">健康度低于70%的电池建议每3个月检测一次，低于50%的电池考虑更换。</p>
+                        </div>
+                        
+                        <div class="border-l-4 border-gray-400 pl-3 py-1">
+                            <h4 class="font-medium">使用工况优化</h4>
+                            <p class="text-sm text-gray-600">避免深度放电（<20%），保持电量在20%-80%区间，可显著延长电池使用寿命。</p>
+                        </div>
+                    </div>
+                    
+                    <button class="w-full mt-4 bg-qore-light text-qore-primary font-medium py-2 px-4 rounded hover:bg-qore-primary hover:text-white transition-colors">
+                        <i class="fa fa-download mr-2"></i> 导出详细分析报告
+                    </button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- 电池详情弹窗 -->
+    <div id="battery-detail-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-qore-primary" id="modal-title">电池详情 - BT-028</h3>
+                <button onclick="closeModal()" class="text-gray-500 hover:text-qore-primary">
+                    <i class="fa fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <h4 class="font-medium mb-3">基本信息</h4>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex justify-between">
+                            <span class="text-gray-500">电池编号</span>
+                            <span class="font-medium" id="modal-id">BT-028</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-500">电池类型</span>
+                            <span class="font-medium" id="modal-type">磷酸铁锂电池</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-500">额定容量</span>
+                            <span class="font-medium" id="modal-rated-cap">100 Ah</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-500">当前容量</span>
+                            <span class="font-medium text-battery-warning" id="modal-current-cap">82.5 Ah</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-500">循环次数</span>
+                            <span class="font-medium" id="modal-cycles">3852</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-500">投运时间</span>
+                            <span class="font-medium" id="modal-install-date">2023-06-15</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-500">上次检测</span>
+                            <span class="font-medium" id="modal-check-date">2026-02-20</span>
+                        </div>
+                    </div>
+                    
+                    <h4 class="font-medium mb-3 mt-6">性能参数</h4>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex justify-between">
+                            <span class="text-gray-500">标称电压</span>
+                            <span class="font-medium">3.2 V</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-500">充电截止电压</span>
+                            <span class="font-medium">3.65 V</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-500">放电截止电压</span>
+                            <span class="font-medium">2.5 V</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-500">最大充电电流</span>
+                            <span class="font-medium">100 A</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-500">最大放电电流</span>
+                            <span class="font-medium">200 A</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div>
+                    <h4 class="font-medium mb-3">健康状态</h4>
+                    <div class="mb-4">
+                        <div class="flex justify-between text-sm mb-1">
+                            <span class="text-gray-500">健康度</span>
+                            <span class="font-medium text-battery-warning" id="modal-health">65.2%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="bg-battery-warning h-2 rounded-full" id="modal-health-bar" style="width: 65.2%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <div class="flex justify-between text-sm mb-1">
+                            <span class="text-gray-500">剩余寿命</span>
+                            <span class="font-medium text-battery-warning" id="modal-lifetime">0.8年</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="bg-battery-warning h-2 rounded-full" id="modal-lifetime-bar" style="width: 20%"></div>
+                        </div>
+                    </div>
+                    
+                    <h4 class="font-medium mb-3">近期监测数据</h4>
+                    <div class="h-48">
+                        <canvas id="modal-chart"></canvas>
+                    </div>
+                    
+                    <div class="mt-4 bg-battery-warning/10 rounded-lg p-3 text-sm text-battery-warning">
+                        <i class="fa fa-exclamation-triangle mr-1"></i>
+                        <span class="font-medium">预警提示：</span>
+                        该电池健康度低于70%，建议缩短检测周期，优化使用工况。
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-6 flex justify-end space-x-3">
+                <button onclick="closeModal()" class="border border-gray-200 rounded px-4 py-2 text-gray-600 hover:bg-gray-50 transition-colors">
+                    关闭
+                </button>
+                <button onclick="predictLifetime(document.getElementById('modal-id').textContent)" class="bg-qore-primary text-white rounded px-4 py-2 hover:bg-qore-dark transition-colors">
+                    <i class="fa fa-calculator mr-1"></i> 寿命预测
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 脚本 -->
+    <script>
+        // 初始化所有图表
+        function initAllCharts() {
+            // 健康度分布图表
+            const healthCtx = document.getElementById('healthDistributionChart').getContext('2d');
+            new Chart(healthCtx, {
+                type: 'pie',
+                data: {
+                    labels: ['健康(>80%)', '良好(60-80%)', '预警(40-60%)', '高风险(<40%)'],
+                    datasets: [{
+                        data: [228, 16, 8, 4],
+                        backgroundColor: [
+                            '#10B981',
+                            '#F59E0B',
+                            '#EF4444',
+                            '#6B7280'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right'
+                        }
+                    }
+                }
+            });
+            
+            // 模型精度对比图表
+            const accuracyCtx = document.getElementById('accuracyChart').getContext('2d');
+            new Chart(accuracyCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Qore-learning', 'CNN', 'LSTM', '传统算法'],
+                    datasets: [{
+                        label: '预测精度(%)',
+                        data: [94.2, 75.5, 82.8, 65.3],
+                        backgroundColor: [
+                            '#6366F1',
+                            '#818CF8',
+                            '#A5B4FC',
+                            '#CBD5E1'
+                        ],
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100
+                        }
+                    }
+                }
+            });
+            
+            // 衰减因素分析图表
+            const factorCtx = document.getElementById('factorAnalysisChart').getContext('2d');
+            new Chart(factorCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['工作温度', '充电倍率', '循环次数', '其他因素'],
+                    datasets: [{
+                        data: [35, 28, 22, 15],
+                        backgroundColor: [
+                            '#6366F1',
+                            '#F59E0B',
+                            '#10B981',
+                            '#6B7280'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        }
+        
+        // 初始化寿命预测曲线图表
+        function initLifetimeChart(lifetime = 0.8, health = 65.2) {
+            const ctx = document.getElementById('lifetimeCurveChart').getContext('2d');
+            
+            // 生成预测数据
+            const months = 12 * 2;
+            const labels = Array.from({length: months + 1}, (_, i) => `${i}月`);
+            const currentHealth = health;
+            const finalHealth = currentHealth - (currentHealth * (lifetime / 2));
+            
+            // 生成衰减曲线
+            const healthData = [];
+            for (let i = 0; i <= months; i++) {
+                // 非线性衰减
+                const ratio = Math.pow(i / months, 1.5);
+                const value = currentHealth - (currentHealth - finalHealth) * ratio;
+                healthData.push(Math.max(0, value.toFixed(1)));
+            }
+            
+            // 如果已有图表实例，先销毁
+            if (window.lifetimeChart) {
+                window.lifetimeChart.destroy();
+            }
+            
+            // 创建新图表
+            window.lifetimeChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: '电池健康度(%)',
+                        data: healthData,
+                        borderColor: '#6366F1',
+                        backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 2
+                    }, {
+                        label: '更换阈值(70%)',
+                        data: Array(months + 1).fill(70),
+                        borderColor: '#F59E0B',
+                        borderDash: [5, 5],
+                        fill: false,
+                        tension: 0,
+                        pointRadius: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100
+                        }
+                    }
+                }
+            });
+        }
+        
+        // 初始化电池详情弹窗图表
+        function initModalChart(batteryId) {
+            const ctx = document.getElementById('modal-chart').getContext('2d');
+            
+            // 模拟不同电池的监测数据
+            const batteryData = {
+                'BT-001': {
+                    capacity: [98, 97, 96, 95, 94, 93, 92],
+                    temperature: [25, 26, 24, 27, 25, 26, 24],
+                    color: '#10B981'
+                },
+                'BT-028': {
+                    capacity: [88, 86, 85, 84, 83, 82.5, 82],
+                    temperature: [28, 29, 30, 28, 31, 29, 28],
+                    color: '#F59E0B'
+                },
+                'BT-105': {
+                    capacity: [45, 43, 41, 40, 39, 38, 37],
+                    temperature: [32, 33, 35, 34, 36, 35, 34],
+                    color: '#EF4444'
+                }
+            };
+            
+            const data = batteryData[batteryId] || batteryData['BT-028'];
+            
+            // 如果已有图表实例，先销毁
+            if (window.modalChart) {
+                window.modalChart.destroy();
+            }
+            
+            // 创建新图表
+            window.modalChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['1周前', '6天前', '5天前', '4天前', '3天前', '2天前', '1天前'],
+                    datasets: [{
+                        label: '容量(Ah)',
+                        data: data.capacity,
+                        borderColor: data.color,
+                        backgroundColor: 'transparent',
+                        yAxisID: 'y',
+                        tension: 0.4
+                    }, {
+                        label: '温度(°C)',
+                        data: data.temperature,
+                        borderColor: '#6366F1',
+                        backgroundColor: 'transparent',
+                        yAxisID: 'y1',
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            display: true
+                        }
+                    },
+                    scales: {
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            title: {
+                                display: true,
+                                text: '容量(Ah)'
+                            }
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            title: {
+                                display: true,
+                                text: '温度(°C)'
+                            },
+                            grid: {
+                                drawOnChartArea: false
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // 查看电池详情
+        function viewBatteryDetail(batteryId) {
+            // 更新弹窗标题和内容
+            document.getElementById('modal-title').textContent = `电池详情 - ${batteryId}`;
+            document.getElementById('modal-id').textContent = batteryId;
+            
+            // 根据电池ID设置不同的详情数据
+            const batteryInfo = {
+                'BT-001': {
+                    type: '三元锂电池',
+                    ratedCap: '100 Ah',
+                    currentCap: '92.0 Ah',
+                    cycles: '1256',
+                    installDate: '2024-01-10',
+                    checkDate: '2026-02-25',
+                    health: '92.0%',
+                    lifetime: '2.8年',
+                    healthBar: 92,
+                    lifetimeBar: 70
+                },
+                'BT-028': {
+                    type: '磷酸铁锂电池',
+                    ratedCap: '100 Ah',
+                    currentCap: '82.5 Ah',
+                    cycles: '3852',
+                    installDate: '2023-06-15',
+                    checkDate: '2026-02-20',
+                    health: '65.2%',
+                    lifetime: '0.8年',
+                    healthBar: 65.2,
+                    lifetimeBar: 20
+                },
+                'BT-105': {
+                    type: '三元锂电池',
+                    ratedCap: '100 Ah',
+                    currentCap: '38.0 Ah',
+                    cycles: '5280',
+                    installDate: '2022-12-05',
+                    checkDate: '2026-02-18',
+                    health: '38.0%',
+                    lifetime: '0.3年',
+                    healthBar: 38,
+                    lifetimeBar: 7.5
+                }
+            };
+            
+            const info = batteryInfo[batteryId] || batteryInfo['BT-028'];
+            
+            document.getElementById('modal-type').textContent = info.type;
+            document.getElementById('modal-rated-cap').textContent = info.ratedCap;
+            document.getElementById('modal-current-cap').textContent = info.currentCap;
+            document.getElementById('modal-cycles').textContent = info.cycles;
+            document.getElementById('modal-install-date').textContent = info.installDate;
+            document.getElementById('modal-check-date').textContent = info.checkDate;
+            document.getElementById('modal-health').textContent = info.health;
+            document.getElementById('modal-lifetime').textContent = info.lifetime;
+            document.getElementById('modal-health-bar').style.width = `${info.healthBar}%`;
+            document.getElementById('modal-lifetime-bar').style.width = `${info.lifetimeBar}%`;
+            
+            // 初始化弹窗图表
+            initModalChart(batteryId);
+            
+            // 显示弹窗
+            document.getElementById('battery-detail-modal').classList.remove('hidden');
+        }
+        
+        // 关闭弹窗
+        function closeModal() {
+            document.getElementById('battery-detail-modal').classList.add('hidden');
+        }
+        
+        // 寿命预测
+        function predictLifetime(batteryId) {
+            // 更新输入框中的电池编号
+            document.getElementById('battery-id-input').value = batteryId;
+            
+            // 根据电池ID设置不同的参数
+            const batteryParams = {
+                'BT-001': {
+                    type: 'ternary',
+                    cycle: 1256,
+                    capacity: 92.0,
+                    temperature: 25,
+                    chargeRate: 1.0,
+                    lifetime: 2.8,
+                    health: 92.0,
+                    risk: '低风险',
+                    days: 1022,
+                    healthBar: 92.0,
+                    riskColor: 'text-battery-healthy'
+                },
+                'BT-028': {
+                    type: 'lfp',
+                    cycle: 3852,
+                    capacity: 82.5,
+                    temperature: 28,
+                    chargeRate: 1.2,
+                    lifetime: 0.8,
+                    health: 65.2,
+                    risk: '中风险',
+                    days: 292,
+                    healthBar: 65.2,
+                    riskColor: 'text-battery-warning'
+                },
+                'BT-105': {
+                    type: 'ternary',
+                    cycle: 5280,
+                    capacity: 38.0,
+                    temperature: 32,
+                    chargeRate: 1.5,
+                    lifetime: 0.3,
+                    health: 38.0,
+                    risk: '高风险',
+                    days: 109,
+                    healthBar: 38.0,
+                    riskColor: 'text-battery-danger'
+                }
+            };
+            
+            const params = batteryParams[batteryId] || batteryParams['BT-028'];
+            
+            // 更新输入参数
+            document.getElementById('battery-type').value = params.type;
+            document.getElementById('cycle-count').value = params.cycle;
+            document.getElementById('capacity').value = params.capacity;
+            document.getElementById('temperature').value = params.temperature;
+            document.getElementById('charge-rate').value = params.chargeRate;
+            
+            // 显示加载状态
+            document.getElementById('prediction-initial').classList.add('hidden');
+            document.getElementById('prediction-loading').classList.remove('hidden');
+            document.getElementById('prediction-result').classList.add('hidden');
+            
+            // 模拟预测延迟
+            setTimeout(() => {
+                // 更新预测结果
+                document.getElementById('pred-lifetime').textContent = `${params.lifetime}年`;
+                document.getElementById('pred-health').textContent = `${params.health}%`;
+                document.getElementById('pred-risk').textContent = params.risk;
+                document.getElementById('pred-risk').className = `text-4xl font-bold ${params.riskColor} mt-2`;
+                document.getElementById('pred-days').textContent = params.days;
+                document.getElementById('health-bar').style.width = `${params.healthBar}%`;
+                
+                // 初始化寿命曲线图表
+                initLifetimeChart(params.lifetime, params.health);
+                
+                // 显示结果
+                document.getElementById('prediction-loading').classList.add('hidden');
+                document.getElementById('prediction-result').classList.remove('hidden');
+                
+                // 滚动到预测区域
+                document.getElementById('prediction').scrollIntoView({ behavior: 'smooth' });
+            }, 1500);
+        }
+        
+        // 页面加载完成初始化
+        window.addEventListener('DOMContentLoaded', function() {
+            // 初始化所有图表
+            initAllCharts();
+            
+            // 初始化寿命预测曲线（默认值）
+            initLifetimeChart();
+            
+            // 预测按钮点击事件
+            document.getElementById('predict-btn').addEventListener('click', function() {
+                const batteryId = document.getElementById('battery-id-input').value;
+                predictLifetime(batteryId);
+            });
+            
+            // 神经元节点交互
+            const neuronNodes = document.querySelectorAll('.neuron-node');
+            neuronNodes.forEach(node => {
+                node.addEventListener('mouseenter', function() {
+                    this.classList.add('active');
+                });
+                node.addEventListener('mouseleave', function() {
+                    this.classList.remove('active');
+                });
+            });
+            
+            // 电池列表行点击事件
+            const batteryRows = document.querySelectorAll('#battery-list tr');
+            batteryRows.forEach(row => {
+                row.addEventListener('click', function() {
+                    batteryRows.forEach(r => r.classList.remove('bg-qore-light/20'));
+                    this.classList.add('bg-qore-light/20');
+                    const batteryId = this.dataset.id;
+                    viewBatteryDetail(batteryId);
+                });
+            });
+            
+            // 导航链接点击事件
+            const navLinks = document.querySelectorAll('nav a');
+            navLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    navLinks.forEach(l => {
+                        l.classList.remove('text-qore-primary', 'font-medium', 'border-b-2', 'border-qore-primary');
+                        l.classList.add('text-gray-600');
+                    });
+                    this.classList.remove('text-gray-600');
+                    this.classList.add('text-qore-primary', 'font-medium', 'border-b-2', 'border-qore-primary');
+                    
+                    const targetId = this.getAttribute('href').substring(1);
+                    document.getElementById(targetId).scrollIntoView({ behavior: 'smooth' });
+                });
+            });
+        });
+    </script>
+</body>
+</html>
