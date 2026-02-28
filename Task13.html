@@ -1,0 +1,1195 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能火势预判与应急资源联动系统</title>
+    <!-- 引入Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入Font Awesome图标 -->
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <!-- 引入Chart.js图表库 -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+    
+    <!-- 自定义Tailwind配置 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        fire: {
+                            primary: '#DC2626',    // 火情红
+                            secondary: '#F87171',  // 浅红
+                            warning: '#F59E0B',    // 预警橙
+                            danger: '#991B1B',     // 危险深红
+                            monitor: '#3B82F6',    // 监控蓝
+                            resource: '#10B981',   // 资源绿
+                        },
+                        map: {
+                            land: '#94A3B8',
+                            forest: '#166534',
+                            water: '#0284C7',
+                            road: '#475569',
+                            building: '#78716C'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['Consolas', 'Monaco', 'monospace']
+                    },
+                }
+            }
+        }
+    </script>
+    
+    <!-- 自定义工具类 -->
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .fire-point {
+                transition: all 0.3s ease;
+                cursor: pointer;
+            }
+            .fire-point:hover {
+                transform: scale(1.1);
+                filter: drop-shadow(0 0 8px rgba(220, 38, 38, 0.8));
+            }
+            .resource-card {
+                transition: all 0.3s ease;
+            }
+            .resource-card:hover {
+                transform: translateY(-4px);
+                box-shadow: 0 8px 24px rgba(16, 185, 129, 0.15);
+            }
+            .resource-progress {
+                height: 8px;
+                border-radius: 4px;
+                overflow: hidden;
+            }
+            .map-grid {
+                background-image: 
+                    linear-gradient(to right, rgba(148, 163, 184, 0.1) 1px, transparent 1px),
+                    linear-gradient(to bottom, rgba(148, 163, 184, 0.1) 1px, transparent 1px);
+                background-size: 20px 20px;
+            }
+            .pulse-animation {
+                animation: pulse 2s infinite;
+            }
+            @keyframes pulse {
+                0% { transform: scale(1); opacity: 1; }
+                50% { transform: scale(1.05); opacity: 0.8; }
+                100% { transform: scale(1); opacity: 1; }
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans text-gray-800">
+    <!-- 顶部指挥栏 -->
+    <header class="bg-fire-primary text-white shadow-lg sticky top-0 z-50">
+        <div class="container mx-auto px-4 py-3 flex flex-col md:flex-row items-center justify-between">
+            <div class="flex items-center space-x-3 mb-3 md:mb-0">
+                <div class="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
+                    <i class="fa fa-fire text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold">智能火势预判与应急资源联动系统</h1>
+                    <p class="text-sm text-white/80">应急指挥中心 - 实时监控版 v2.5</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center space-x-6">
+                <!-- 紧急状态 -->
+                <div class="flex items-center bg-fire-danger/50 rounded-full px-3 py-1">
+                    <div class="w-3 h-3 rounded-full bg-yellow-400 animate-pulse mr-2"></div>
+                    <span class="text-sm font-medium">一级响应状态</span>
+                </div>
+                
+                <!-- 时间日期 -->
+                <div class="hidden md:flex flex-col items-end">
+                    <span class="text-sm font-medium" id="current-time">14:25:38</span>
+                    <span class="text-xs text-white/80" id="current-date">2026年02月28日 星期六</span>
+                </div>
+                
+                <!-- 操作按钮 -->
+                <div class="flex items-center space-x-3">
+                    <button class="bg-white/20 hover:bg-white/30 rounded-full px-3 py-1 text-sm flex items-center transition-colors">
+                        <i class="fa fa-refresh mr-1"></i> 刷新数据
+                    </button>
+                    <button class="bg-fire-warning hover:bg-fire-warning/90 rounded-full px-3 py-1 text-sm flex items-center transition-colors">
+                        <i class="fa fa-bell mr-1"></i> 发布预警
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 二级导航 -->
+        <nav class="bg-fire-danger px-4 py-2">
+            <div class="container mx-auto flex space-x-6 overflow-x-auto scrollbar-hide">
+                <a href="#monitor" class="text-white font-medium border-b-2 border-white px-1 py-1 whitespace-nowrap">火情监控</a>
+                <a href="#prediction" class="text-white/80 hover:text-white px-1 py-1 whitespace-nowrap transition-colors">火势预判</a>
+                <a href="#resources" class="text-white/80 hover:text-white px-1 py-1 whitespace-nowrap transition-colors">资源调度</a>
+                <a href="#linkage" class="text-white/80 hover:text-white px-1 py-1 whitespace-nowrap transition-colors">联动指挥</a>
+                <a href="#analysis" class="text-white/80 hover:text-white px-1 py-1 whitespace-nowrap transition-colors">数据分析</a>
+                <a href="#history" class="text-white/80 hover:text-white px-1 py-1 whitespace-nowrap transition-colors">历史记录</a>
+            </div>
+        </nav>
+    </header>
+
+    <!-- 主要内容区域 -->
+    <main class="container mx-auto px-4 py-6">
+        <!-- 1. 火情监控面板 -->
+        <section id="monitor" class="mb-8">
+            <h2 class="text-xl font-bold mb-6 flex items-center text-fire-primary">
+                <i class="fa fa-eye mr-2"></i> 火情实时监控
+            </h2>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- 左侧：监控概览 -->
+                <div class="lg:col-span-1 space-y-6">
+                    <!-- 核心指标卡片 -->
+                    <div class="grid grid-cols-2 gap-4">
+                        <!-- 告警数量 -->
+                        <div class="bg-white rounded-lg shadow-md p-4">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="text-gray-500 text-sm">实时告警数</p>
+                                    <h3 class="text-3xl font-bold mt-1 text-fire-primary">12</h3>
+                                    <p class="text-fire-warning text-xs mt-2"><i class="fa fa-arrow-up"></i> 较昨日 +3</p>
+                                </div>
+                                <div class="w-10 h-10 rounded-full bg-fire-primary/10 flex items-center justify-center text-fire-primary">
+                                    <i class="fa fa-exclamation-triangle text-xl"></i>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 火情等级 -->
+                        <div class="bg-white rounded-lg shadow-md p-4">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="text-gray-500 text-sm">最高火情等级</p>
+                                    <h3 class="text-3xl font-bold mt-1 text-fire-danger">Ⅲ级</h3>
+                                    <p class="text-fire-danger text-xs mt-2"><i class="fa fa-warning"></i> 重大火情</p>
+                                </div>
+                                <div class="w-10 h-10 rounded-full bg-fire-danger/10 flex items-center justify-center text-fire-danger">
+                                    <i class="fa fa-signal text-xl"></i>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 监控覆盖 -->
+                        <div class="bg-white rounded-lg shadow-md p-4">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="text-gray-500 text-sm">监控覆盖率</p>
+                                    <h3 class="text-3xl font-bold mt-1 text-fire-monitor">98%</h3>
+                                    <p class="text-fire-monitor text-xs mt-2"><i class="fa fa-check-circle"></i> 全域覆盖</p>
+                                </div>
+                                <div class="w-10 h-10 rounded-full bg-fire-monitor/10 flex items-center justify-center text-fire-monitor">
+                                    <i class="fa fa-video-camera text-xl"></i>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 响应资源 -->
+                        <div class="bg-white rounded-lg shadow-md p-4">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="text-gray-500 text-sm">已调度资源</p>
+                                    <h3 class="text-3xl font-bold mt-1 text-fire-resource">28</h3>
+                                    <p class="text-fire-resource text-xs mt-2"><i class="fa fa-truck"></i> 队伍/设备</p>
+                                </div>
+                                <div class="w-10 h-10 rounded-full bg-fire-resource/10 flex items-center justify-center text-fire-resource">
+                                    <i class="fa fa-truck text-xl"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 告警列表 -->
+                    <div class="bg-white rounded-lg shadow-md p-4">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="font-bold">火情告警列表</h3>
+                            <select class="border border-gray-200 rounded px-2 py-1 text-sm">
+                                <option>全部等级</option>
+                                <option>Ⅰ级（一般）</option>
+                                <option>Ⅱ级（较大）</option>
+                                <option selected>Ⅲ级（重大）</option>
+                                <option>Ⅳ级（特别重大）</option>
+                            </select>
+                        </div>
+                        
+                        <div class="space-y-3 max-h-96 overflow-y-auto">
+                            <!-- 告警项1 -->
+                            <div class="border border-fire-danger/30 rounded-lg p-3 hover:bg-fire-danger/5 cursor-pointer fire-alarm-item" data-id="F20260228001">
+                                <div class="flex justify-between">
+                                    <div class="font-medium text-fire-danger">F20260228001 - 西山森林公园</div>
+                                    <span class="text-xs bg-fire-danger text-white px-2 py-0.5 rounded">Ⅲ级</span>
+                                </div>
+                                <div class="flex justify-between mt-2 text-sm text-gray-600">
+                                    <div>
+                                        <i class="fa fa-map-marker text-fire-primary mr-1"></i>
+                                        经度: 116.42° 纬度: 39.95°
+                                    </div>
+                                    <div>
+                                        <i class="fa fa-clock-o text-gray-500 mr-1"></i>
+                                        14:05:23
+                                    </div>
+                                </div>
+                                <div class="mt-2 flex justify-between items-center">
+                                    <div class="text-xs text-gray-500">
+                                        <span class="mr-3"><i class="fa fa-thermometer-three-quarters text-fire-warning mr-1"></i> 温度: 38°C</span>
+                                        <span><i class="fa fa-tint text-fire-monitor mr-1"></i> 湿度: 25%</span>
+                                    </div>
+                                    <button class="text-xs bg-fire-primary text-white px-2 py-1 rounded hover:bg-fire-danger transition-colors" onclick="viewFireDetail('F20260228001')">
+                                        查看详情
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- 告警项2 -->
+                            <div class="border border-fire-warning/30 rounded-lg p-3 hover:bg-fire-warning/5 cursor-pointer fire-alarm-item" data-id="F20260228002">
+                                <div class="flex justify-between">
+                                    <div class="font-medium text-fire-warning">F20260228002 - 北山工业区</div>
+                                    <span class="text-xs bg-fire-warning text-white px-2 py-0.5 rounded">Ⅱ级</span>
+                                </div>
+                                <div class="flex justify-between mt-2 text-sm text-gray-600">
+                                    <div>
+                                        <i class="fa fa-map-marker text-fire-primary mr-1"></i>
+                                        经度: 116.48° 纬度: 39.98°
+                                    </div>
+                                    <div>
+                                        <i class="fa fa-clock-o text-gray-500 mr-1"></i>
+                                        13:42:18
+                                    </div>
+                                </div>
+                                <div class="mt-2 flex justify-between items-center">
+                                    <div class="text-xs text-gray-500">
+                                        <span class="mr-3"><i class="fa fa-thermometer-three-quarters text-fire-warning mr-1"></i> 温度: 32°C</span>
+                                        <span><i class="fa fa-tint text-fire-monitor mr-1"></i> 湿度: 30%</span>
+                                    </div>
+                                    <button class="text-xs bg-fire-primary text-white px-2 py-1 rounded hover:bg-fire-danger transition-colors" onclick="viewFireDetail('F20260228002')">
+                                        查看详情
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- 告警项3 -->
+                            <div class="border border-gray-300 rounded-lg p-3 hover:bg-gray-50 cursor-pointer fire-alarm-item" data-id="F20260228003">
+                                <div class="flex justify-between">
+                                    <div class="font-medium text-gray-700">F20260228003 - 南郊农田区</div>
+                                    <span class="text-xs bg-gray-500 text-white px-2 py-0.5 rounded">Ⅰ级</span>
+                                </div>
+                                <div class="flex justify-between mt-2 text-sm text-gray-600">
+                                    <div>
+                                        <i class="fa fa-map-marker text-fire-primary mr-1"></i>
+                                        经度: 116.35° 纬度: 39.88°
+                                    </div>
+                                    <div>
+                                        <i class="fa fa-clock-o text-gray-500 mr-1"></i>
+                                        12:18:45
+                                    </div>
+                                </div>
+                                <div class="mt-2 flex justify-between items-center">
+                                    <div class="text-xs text-gray-500">
+                                        <span class="mr-3"><i class="fa fa-thermometer-three-quarters text-fire-warning mr-1"></i> 温度: 28°C</span>
+                                        <span><i class="fa fa-tint text-fire-monitor mr-1"></i> 湿度: 45%</span>
+                                    </div>
+                                    <button class="text-xs bg-fire-primary text-white px-2 py-1 rounded hover:bg-fire-danger transition-colors" onclick="viewFireDetail('F20260228003')">
+                                        查看详情
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <button class="w-full mt-4 border border-gray-200 rounded px-3 py-2 text-gray-700 hover:bg-gray-50 transition-colors flex items-center justify-center">
+                            <i class="fa fa-list mr-2"></i> 查看全部告警 (12)
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- 右侧：监控地图 -->
+                <div class="lg:col-span-2 bg-white rounded-lg shadow-md p-4">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-bold">火情监控地图</h3>
+                        <div class="flex space-x-2">
+                            <button class="bg-fire-monitor/10 text-fire-monitor rounded px-3 py-1 text-sm hover:bg-fire-monitor/20 transition-colors">卫星视图</button>
+                            <button class="bg-gray-100 text-gray-700 rounded px-3 py-1 text-sm hover:bg-gray-200 transition-colors">地形视图</button>
+                            <button class="bg-gray-100 text-gray-700 rounded px-3 py-1 text-sm hover:bg-gray-200 transition-colors">热力视图</button>
+                        </div>
+                    </div>
+                    
+                    <!-- 模拟地图 -->
+                    <div class="relative w-full h-[500px] bg-map-land rounded-lg map-grid overflow-hidden">
+                        <!-- 地图背景元素 -->
+                        <div class="absolute top-1/4 left-1/4 w-1/2 h-1/2 bg-map-forest rounded-lg opacity-80"></div>
+                        <div class="absolute bottom-1/4 right-1/4 w-1/3 h-1/4 bg-map-water rounded-lg opacity-80"></div>
+                        <div class="absolute top-1/2 left-0 w-full h-2 bg-map-road opacity-80"></div>
+                        <div class="absolute top-1/3 right-1/5 w-16 h-16 bg-map-building rounded opacity-80"></div>
+                        
+                        <!-- 火情点1 - 重大火情 -->
+                        <div class="absolute top-[25%] left-[35%] fire-point pulse-animation" id="fire-point-1" data-id="F20260228001">
+                            <div class="relative">
+                                <div class="w-8 h-8 bg-fire-danger rounded-full flex items-center justify-center text-white font-bold">Ⅲ</div>
+                                <div class="absolute -top-1 -left-1 w-10 h-10 border-2 border-fire-danger rounded-full animate-ping opacity-75"></div>
+                                <div class="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-white rounded px-2 py-1 text-xs shadow-md whitespace-nowrap">
+                                    西山森林公园
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 火情点2 - 较大火情 -->
+                        <div class="absolute top-[45%] right-[30%] fire-point" id="fire-point-2" data-id="F20260228002">
+                            <div class="relative">
+                                <div class="w-6 h-6 bg-fire-warning rounded-full flex items-center justify-center text-white font-bold text-xs">Ⅱ</div>
+                                <div class="absolute -top-1 -left-1 w-8 h-8 border-2 border-fire-warning rounded-full animate-ping opacity-75"></div>
+                                <div class="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-white rounded px-2 py-1 text-xs shadow-md whitespace-nowrap">
+                                    北山工业区
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 火情点3 - 一般火情 -->
+                        <div class="absolute bottom-[30%] left-[25%] fire-point" id="fire-point-3" data-id="F20260228003">
+                            <div class="relative">
+                                <div class="w-5 h-5 bg-gray-500 rounded-full flex items-center justify-center text-white font-bold text-xs">Ⅰ</div>
+                                <div class="absolute -top-1 -left-1 w-7 h-7 border-2 border-gray-500 rounded-full animate-ping opacity-75"></div>
+                                <div class="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-white rounded px-2 py-1 text-xs shadow-md whitespace-nowrap">
+                                    南郊农田区
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 资源部署点 -->
+                        <div class="absolute top-[30%] left-[40%]">
+                            <div class="relative">
+                                <div class="w-6 h-6 bg-fire-resource rounded-full flex items-center justify-center text-white">
+                                    <i class="fa fa-truck text-xs"></i>
+                                </div>
+                                <div class="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-white rounded px-2 py-1 text-xs shadow-md whitespace-nowrap">
+                                    消防车辆 (8辆)
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="absolute top-[40%] right-[35%]">
+                            <div class="relative">
+                                <div class="w-6 h-6 bg-fire-resource rounded-full flex items-center justify-center text-white">
+                                    <i class="fa fa-users text-xs"></i>
+                                </div>
+                                <div class="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-white rounded px-2 py-1 text-xs shadow-md whitespace-nowrap">
+                                    消防队伍 (120人)
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="absolute top-[20%] right-[25%]">
+                            <div class="relative">
+                                <div class="w-6 h-6 bg-fire-resource rounded-full flex items-center justify-center text-white">
+                                    <i class="fa fa-helicopter text-xs"></i>
+                                </div>
+                                <div class="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-white rounded px-2 py-1 text-xs shadow-md whitespace-nowrap">
+                                    消防直升机 (2架)
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 资源调度路线 -->
+                        <svg class="absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg">
+                            <!-- 车辆到火情1 -->
+                            <path d="M 40% 30% L 35% 25%" stroke="#10B981" stroke-width="2" stroke-dasharray="5,5" fill="none" />
+                            <!-- 队伍到火情2 -->
+                            <path d="M 70% 40% L 70% 45%" stroke="#10B981" stroke-width="2" stroke-dasharray="5,5" fill="none" />
+                            <!-- 直升机到火情1 -->
+                            <path d="M 75% 20% L 35% 25%" stroke="#10B981" stroke-width="2" fill="none" />
+                        </svg>
+                        
+                        <!-- 地图控件 -->
+                        <div class="absolute bottom-4 right-4 bg-white rounded-lg shadow-lg p-2">
+                            <div class="flex flex-col space-y-2">
+                                <button class="w-8 h-8 bg-gray-100 rounded flex items-center justify-center hover:bg-gray-200">
+                                    <i class="fa fa-plus text-gray-700"></i>
+                                </button>
+                                <button class="w-8 h-8 bg-gray-100 rounded flex items-center justify-center hover:bg-gray-200">
+                                    <i class="fa fa-minus text-gray-700"></i>
+                                </button>
+                                <button class="w-8 h-8 bg-gray-100 rounded flex items-center justify-center hover:bg-gray-200 mt-2">
+                                    <i class="fa fa-location-arrow text-gray-700"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- 图例 -->
+                        <div class="absolute top-4 left-4 bg-white/90 rounded-lg shadow-lg p-3 text-xs">
+                            <div class="font-medium mb-2">图例</div>
+                            <div class="space-y-1">
+                                <div class="flex items-center">
+                                    <div class="w-3 h-3 bg-fire-danger rounded-full mr-2"></div>
+                                    <span>Ⅲ级火情 (重大)</span>
+                                </div>
+                                <div class="flex items-center">
+                                    <div class="w-3 h-3 bg-fire-warning rounded-full mr-2"></div>
+                                    <span>Ⅱ级火情 (较大)</span>
+                                </div>
+                                <div class="flex items-center">
+                                    <div class="w-3 h-3 bg-gray-500 rounded-full mr-2"></div>
+                                    <span>Ⅰ级火情 (一般)</span>
+                                </div>
+                                <div class="flex items-center mt-2">
+                                    <div class="w-3 h-3 bg-fire-resource rounded-full mr-2 flex items-center justify-center text-white text-[8px]">
+                                        <i class="fa fa-truck"></i>
+                                    </div>
+                                    <span>消防资源</span>
+                                </div>
+                                <div class="flex items-center">
+                                    <div class="w-6 h-0.5 bg-fire-resource mr-2"></div>
+                                    <span>调度路线</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2. 火势预判面板 -->
+        <section id="prediction" class="mb-8">
+            <h2 class="text-xl font-bold mb-6 flex items-center text-fire-primary">
+                <i class="fa fa-line-chart mr-2"></i> 智能火势预判
+            </h2>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- 预判参数配置 -->
+                <div class="bg-white rounded-lg shadow-md p-4 lg:col-span-1">
+                    <h3 class="font-bold mb-4">预判参数配置</h3>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">火情编号</label>
+                            <select id="fire-id-select" class="w-full border border-gray-200 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-fire-primary focus:border-transparent">
+                                <option value="F20260228001" selected>F20260228001 - 西山森林公园</option>
+                                <option value="F20260228002">F20260228002 - 北山工业区</option>
+                                <option value="F20260228003">F20260228003 - 南郊农田区</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">当前火情面积</label>
+                            <div class="flex items-center">
+                                <input type="number" id="fire-area" value="2500" class="w-full border border-gray-200 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-fire-primary focus:border-transparent">
+                                <span class="ml-2 text-sm text-gray-500">平方米</span>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">风速</label>
+                                <div class="flex items-center">
+                                    <input type="number" id="wind-speed" value="4.5" step="0.1" class="w-full border border-gray-200 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-fire-primary focus:border-transparent">
+                                    <span class="ml-1 text-xs text-gray-500">m/s</span>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">风向</label>
+                                <select id="wind-direction" class="w-full border border-gray-200 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-fire-primary focus:border-transparent">
+                                    <option>西北风</option>
+                                    <option selected>西南风</option>
+                                    <option>东北风</option>
+                                    <option>东南风</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">温度</label>
+                                <div class="flex items-center">
+                                    <input type="number" id="temperature" value="38" class="w-full border border-gray-200 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-fire-primary focus:border-transparent">
+                                    <span class="ml-1 text-xs text-gray-500">°C</span>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">湿度</label>
+                                <div class="flex items-center">
+                                    <input type="number" id="humidity" value="25" class="w-full border border-gray-200 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-fire-primary focus:border-transparent">
+                                    <span class="ml-1 text-xs text-gray-500">%</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">预判时间范围</label>
+                            <div class="flex space-x-3">
+                                <button class="flex-1 bg-fire-primary text-white rounded py-2 font-medium hover:bg-fire-danger transition-colors">1小时</button>
+                                <button class="flex-1 bg-gray-100 text-gray-700 rounded py-2 font-medium hover:bg-gray-200 transition-colors">3小时</button>
+                                <button class="flex-1 bg-gray-100 text-gray-700 rounded py-2 font-medium hover:bg-gray-200 transition-colors">6小时</button>
+                                <button class="flex-1 bg-gray-100 text-gray-700 rounded py-2 font-medium hover:bg-gray-200 transition-colors">12小时</button>
+                            </div>
+                        </div>
+                        
+                        <button id="predict-fire-btn" class="w-full bg-fire-primary text-white font-medium py-2 px-4 rounded hover:bg-fire-danger transition-colors flex items-center justify-center">
+                            <i class="fa fa-cogs mr-2"></i> 运行智能预判模型
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- 预判结果展示 -->
+                <div class="bg-white rounded-lg shadow-md p-4 lg:col-span-2">
+                    <h3 class="font-bold mb-4 flex items-center">
+                        火势预判结果
+                        <span class="ml-2 text-xs bg-fire-primary/10 text-fire-primary px-2 py-1 rounded">AI预判模型 v3.2</span>
+                    </h3>
+                    
+                    <div id="prediction-initial" class="text-center py-12 text-gray-500">
+                        <i class="fa fa-fire text-4xl mb-3 text-fire-primary"></i>
+                        <p>配置预判参数并点击预判按钮</p>
+                        <p class="text-sm mt-1">基于机器学习的智能火势蔓延预判</p>
+                    </div>
+                    
+                    <div id="prediction-loading" class="hidden text-center py-12 text-gray-500">
+                        <div class="animate-spin text-fire-primary text-4xl mb-3">
+                            <i class="fa fa-circle-o-notch"></i>
+                        </div>
+                        <p>AI模型正在分析火势蔓延趋势...</p>
+                        <div class="w-full bg-gray-200 rounded-full h-2 mt-4 mx-auto max-w-md">
+                            <div class="bg-fire-primary h-2 rounded-full animate-pulse" style="width: 85%"></div>
+                        </div>
+                    </div>
+                    
+                    <div id="prediction-result" class="hidden">
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                            <!-- 1小时后面积 -->
+                            <div class="bg-fire-primary/10 rounded-lg p-4 text-center">
+                                <p class="text-gray-500 text-sm">1小时后预估面积</p>
+                                <p class="text-3xl font-bold text-fire-primary mt-2">4,800<span class="text-lg">㎡</span></p>
+                                <p class="text-xs text-fire-warning mt-1"><i class="fa fa-arrow-up"></i> +92% 增速</p>
+                            </div>
+                            
+                            <!-- 蔓延速度 -->
+                            <div class="bg-fire-primary/10 rounded-lg p-4 text-center">
+                                <p class="text-gray-500 text-sm">火势蔓延速度</p>
+                                <p class="text-3xl font-bold text-fire-warning mt-2">7.2<span class="text-lg">m/min</span></p>
+                                <p class="text-xs text-gray-500 mt-1">西南方向为主</p>
+                            </div>
+                            
+                            <!-- 危险等级 -->
+                            <div class="bg-fire-primary/10 rounded-lg p-4 text-center">
+                                <p class="text-gray-500 text-sm">预判危险等级</p>
+                                <p class="text-3xl font-bold text-fire-danger mt-2">Ⅳ级</p>
+                                <p class="text-xs text-fire-danger mt-1">特别重大火情</p>
+                            </div>
+                            
+                            <!-- 受控时间 -->
+                            <div class="bg-fire-primary/10 rounded-lg p-4 text-center">
+                                <p class="text-gray-500 text-sm">预估受控时间</p>
+                                <p class="text-3xl font-bold text-fire-resource mt-2">8<span class="text-lg">小时</span></p>
+                                <p class="text-xs text-gray-500 mt-1">需增援资源</p>
+                            </div>
+                        </div>
+                        
+                        <!-- 火势蔓延预测曲线 -->
+                        <div class="mb-6">
+                            <h4 class="font-medium mb-3">火势蔓延趋势预测</h4>
+                            <div class="h-64">
+                                <canvas id="fireSpreadChart"></canvas>
+                            </div>
+                        </div>
+                        
+                        <!-- 预判分析 -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="bg-gray-50 rounded-lg p-3">
+                                <h4 class="font-medium mb-2 text-fire-primary">蔓延影响因素分析</h4>
+                                <ul class="space-y-2 text-sm">
+                                    <li class="flex items-start">
+                                        <i class="fa fa-wind text-fire-primary mt-1 mr-2"></i>
+                                        <div>
+                                            <span class="font-medium">风速影响 (35%)：</span>
+                                            西南风4.5m/s加速火势向东北方向蔓延
+                                        </div>
+                                    </li>
+                                    <li class="flex items-start">
+                                        <i class="fa fa-thermometer-three-quarters text-fire-warning mt-1 mr-2"></i>
+                                        <div>
+                                            <span class="font-medium">高温影响 (28%)：</span>
+                                            38°C高温加速可燃物燃烧速度
+                                        </div>
+                                    </li>
+                                    <li class="flex items-start">
+                                        <i class="fa fa-tint text-fire-monitor mt-1 mr-2"></i>
+                                        <div>
+                                            <span class="font-medium">低湿度影响 (22%)：</span>
+                                            25%低湿度使植被易燃性增加
+                                        </div>
+                                    </li>
+                                    <li class="flex items-start">
+                                        <i class="fa fa-tree text-map-forest mt-1 mr-2"></i>
+                                        <div>
+                                            <span class="font-medium">植被类型 (15%)：</span>
+                                            针叶林为主，燃烧速度快
+                                        </div>
+                                    </li>
+                                </ul>
+                            </div>
+                            
+                            <div class="bg-gray-50 rounded-lg p-3">
+                                <h4 class="font-medium mb-2 text-fire-primary">应急处置建议</h4>
+                                <ul class="space-y-2 text-sm">
+                                    <li class="flex items-start">
+                                        <i class="fa fa-exclamation-circle text-fire-danger mt-1 mr-2"></i>
+                                        <div>立即启动最高级别应急响应，疏散周边3公里范围内人员</div>
+                                    </li>
+                                    <li class="flex items-start">
+                                        <i class="fa fa-truck text-fire-resource mt-1 mr-2"></i>
+                                        <div>请求增援消防车辆15辆，消防人员300人</div>
+                                    </li>
+                                    <li class="flex items-start">
+                                        <i class="fa fa-helicopter text-fire-resource mt-1 mr-2"></i>
+                                        <div>调配消防直升机5架，进行空中洒水作业</div>
+                                    </li>
+                                    <li class="flex items-start">
+                                        <i class="fa fa-road text-map-road mt-1 mr-2"></i>
+                                        <div>在火势蔓延方向建立防火隔离带，阻断蔓延路径</div>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. 资源调度面板 -->
+        <section id="resources" class="mb-8">
+            <h2 class="text-xl font-bold mb-6 flex items-center text-fire-primary">
+                <i class="fa fa-truck mr-2"></i> 应急资源调度
+            </h2>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- 资源总览 -->
+                <div class="bg-white rounded-lg shadow-md p-4 lg:col-span-1">
+                    <h3 class="font-bold mb-4">应急资源总览</h3>
+                    
+                    <!-- 资源统计 -->
+                    <div class="space-y-6">
+                        <!-- 消防车辆 -->
+                        <div>
+                            <div class="flex justify-between items-center mb-1">
+                                <div class="flex items-center">
+                                    <i class="fa fa-truck text-fire-resource mr-2"></i>
+                                    <span class="font-medium">消防车辆</span>
+                                </div>
+                                <span class="text-sm text-gray-600">28/50 辆</span>
+                            </div>
+                            <div class="resource-progress bg-gray-200">
+                                <div class="bg-fire-resource" style="width: 56%"></div>
+                            </div>
+                            <div class="flex justify-between mt-1 text-xs text-gray-500">
+                                <span>已调度: 8辆 (西山火情)</span>
+                                <span>可用: 22辆</span>
+                            </div>
+                        </div>
+                        
+                        <!-- 消防人员 -->
+                        <div>
+                            <div class="flex justify-between items-center mb-1">
+                                <div class="flex items-center">
+                                    <i class="fa fa-users text-fire-resource mr-2"></i>
+                                    <span class="font-medium">消防人员</span>
+                                </div>
+                                <span class="text-sm text-gray-600">180/500 人</span>
+                            </div>
+                            <div class="resource-progress bg-gray-200">
+                                <div class="bg-fire-resource" style="width: 36%"></div>
+                            </div>
+                            <div class="flex justify-between mt-1 text-xs text-gray-500">
+                                <span>已调度: 120人 (西山火情)</span>
+                                <span>可用: 320人</span>
+                            </div>
+                        </div>
+                        
+                        <!-- 消防直升机 -->
+                        <div>
+                            <div class="flex justify-between items-center mb-1">
+                                <div class="flex items-center">
+                                    <i class="fa fa-helicopter text-fire-resource mr-2"></i>
+                                    <span class="font-medium">消防直升机</span>
+                                </div>
+                                <span class="text-sm text-gray-600">2/8 架</span>
+                            </div>
+                            <div class="resource-progress bg-gray-200">
+                                <div class="bg-fire-resource" style="width: 25%"></div>
+                            </div>
+                            <div class="flex justify-between mt-1 text-xs text-gray-500">
+                                <span>已调度: 2架 (西山火情)</span>
+                                <span>可用: 6架</span>
+                            </div>
+                        </div>
+                        
+                        <!-- 灭火设备 -->
+                        <div>
+                            <div class="flex justify-between items-center mb-1">
+                                <div class="flex items-center">
+                                    <i class="fa fa-fire-extinguisher text-fire-resource mr-2"></i>
+                                    <span class="font-medium">灭火设备</span>
+                                </div>
+                                <span class="text-sm text-gray-600">120/300 套</span>
+                            </div>
+                            <div class="resource-progress bg-gray-200">
+                                <div class="bg-fire-resource" style="width: 40%"></div>
+                            </div>
+                            <div class="flex justify-between mt-1 text-xs text-gray-500">
+                                <span>已调度: 45套 (西山火情)</span>
+                                <span>可用: 180套</span>
+                            </div>
+                        </div>
+                        
+                        <!-- 医疗资源 -->
+                        <div>
+                            <div class="flex justify-between items-center mb-1">
+                                <div class="flex items-center">
+                                    <i class="fa fa-ambulance text-fire-resource mr-2"></i>
+                                    <span class="font-medium">医疗资源</span>
+                                </div>
+                                <span class="text-sm text-gray-600">5/20 组</span>
+                            </div>
+                            <div class="resource-progress bg-gray-200">
+                                <div class="bg-fire-resource" style="width: 25%"></div>
+                            </div>
+                            <div class="flex justify-between mt-1 text-xs text-gray-500">
+                                <span>已调度: 2组 (西山火情)</span>
+                                <span>可用: 15组</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 资源调度按钮 -->
+                    <button class="w-full mt-6 bg-fire-resource text-white font-medium py-2 px-4 rounded hover:bg-fire-resource/90 transition-colors flex items-center justify-center">
+                        <i class="fa fa-send mr-2"></i> 调度应急资源
+                    </button>
+                </div>
+                
+                <!-- 资源调度详情 -->
+                <div class="bg-white rounded-lg shadow-md p-4 lg:col-span-2">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-bold">资源调度详情 - 西山森林公园火情</h3>
+                        <div class="flex space-x-2">
+                            <button class="bg-fire-primary/10 text-fire-primary rounded px-3 py-1 text-sm hover:bg-fire-primary/20 transition-colors">当前调度</button>
+                            <button class="bg-gray-100 text-gray-700 rounded px-3 py-1 text-sm hover:bg-gray-200 transition-colors">历史调度</button>
+                            <button class="bg-gray-100 text-gray-700 rounded px-3 py-1 text-sm hover:bg-gray-200 transition-colors">资源申请</button>
+                        </div>
+                    </div>
+                    
+                    <!-- 调度资源列表 -->
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead>
+                                <tr class="border-b border-gray-200 bg-gray-50">
+                                    <th class="text-left py-3 px-3 font-medium">资源类型</th>
+                                    <th class="text-left py-3 px-3 font-medium">数量</th>
+                                    <th class="text-left py-3 px-3 font-medium">所属单位</th>
+                                    <th class="text-left py-3 px-3 font-medium">预计到达时间</th>
+                                    <th class="text-left py-3 px-3 font-medium">状态</th>
+                                    <th class="text-left py-3 px-3 font-medium">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- 消防车 -->
+                                <tr class="border-b border-gray-100 hover:bg-gray-50">
+                                    <td class="py-3 px-3">
+                                        <div class="flex items-center">
+                                            <i class="fa fa-truck text-fire-resource mr-2"></i>
+                                            <span>消防水罐车</span>
+                                        </div>
+                                    </td>
+                                    <td class="py-3 px-3">8辆</td>
+                                    <td class="py-3 px-3">市消防支队一大队</td>
+                                    <td class="py-3 px-3">14:45 (已到达)</td>
+                                    <td class="py-3 px-3">
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-fire-resource/10 text-fire-resource">
+                                            <span class="w-2 h-2 rounded-full bg-fire-resource mr-1"></span>
+                                            已部署
+                                        </span>
+                                    </td>
+                                    <td class="py-3 px-3">
+                                        <button class="text-fire-monitor mr-2 hover:text-fire-primary transition-colors">
+                                            <i class="fa fa-map-marker"></i>
+                                        </button>
+                                        <button class="text-gray-500 hover:text-fire-primary transition-colors">
+                                            <i class="fa fa-phone"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                
+                                <!-- 消防人员 -->
+                                <tr class="border-b border-gray-100 hover:bg-gray-50">
+                                    <td class="py-3 px-3">
+                                        <div class="flex items-center">
+                                            <i class="fa fa-users text-fire-resource mr-2"></i>
+                                            <span>消防特勤队</span>
+                                        </div>
+                                    </td>
+                                    <td class="py-3 px-3">120人</td>
+                                    <td class="py-3 px-3">市消防特勤支队</td>
+                                    <td class="py-3 px-3">14:30 (已到达)</td>
+                                    <td class="py-3 px-3">
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-fire-resource/10 text-fire-resource">
+                                            <span class="w-2 h-2 rounded-full bg-fire-resource mr-1"></span>
+                                            已部署
+                                        </span>
+                                    </td>
+                                    <td class="py-3 px-3">
+                                        <button class="text-fire-monitor mr-2 hover:text-fire-primary transition-colors">
+                                            <i class="fa fa-map-marker"></i>
+                                        </button>
+                                        <button class="text-gray-500 hover:text-fire-primary transition-colors">
+                                            <i class="fa fa-phone"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                
+                                <!-- 直升机 -->
+                                <tr class="border-b border-gray-100 hover:bg-gray-50">
+                                    <td class="py-3 px-3">
+                                        <div class="flex items-center">
+                                            <i class="fa fa-helicopter text-fire-resource mr-2"></i>
+                                            <span>消防直升机</span>
+                                        </div>
+                                    </td>
+                                    <td class="py-3 px-3">2架</td>
+                                    <td class="py-3 px-3">省航空应急救援中心</td>
+                                    <td class="py-3 px-3">15:00 (已到达)</td>
+                                    <td class="py-3 px-3">
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-fire-resource/10 text-fire-resource">
+                                            <span class="w-2 h-2 rounded-full bg-fire-resource mr-1"></span>
+                                            已部署
+                                        </span>
+                                    </td>
+                                    <td class="py-3 px-3">
+                                        <button class="text-fire-monitor mr-2 hover:text-fire-primary transition-colors">
+                                            <i class="fa fa-map-marker"></i>
+                                        </button>
+                                        <button class="text-gray-500 hover:text-fire-primary transition-colors">
+                                            <i class="fa fa-phone"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                
+                                <!-- 增援请求 -->
+                                <tr class="border-b border-gray-100 hover:bg-gray-50">
+                                    <td class="py-3 px-3">
+                                        <div class="flex items-center">
+                                            <i class="fa fa-truck text-fire-warning mr-2"></i>
+                                            <span>增援消防车辆</span>
+                                        </div>
+                                    </td>
+                                    <td class="py-3 px-3">15辆</td>
+                                    <td class="py-3 px-3">周边区县消防支队</td>
+                                    <td class="py-3 px-3">16:30 (预计)</td>
+                                    <td class="py-3 px-3">
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-fire-warning/10 text-fire-warning">
+                                            <span class="w-2 h-2 rounded-full bg-fire-warning mr-1 animate-pulse"></span>
+                                            调度中
+                                        </span>
+                                    </td>
+                                    <td class="py-3 px-3">
+                                        <button class="text-fire-warning mr-2 hover:text-fire-primary transition-colors">
+                                            <i class="fa fa-clock-o"></i>
+                                        </button>
+                                        <button class="text-gray-500 hover:text-fire-primary transition-colors">
+                                            <i class="fa fa-cancel"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                
+                                <!-- 医疗资源 -->
+                                <tr class="hover:bg-gray-50">
+                                    <td class="py-3 px-3">
+                                        <div class="flex items-center">
+                                            <i class="fa fa-ambulance text-fire-resource mr-2"></i>
+                                            <span>医疗救护组</span>
+                                        </div>
+                                    </td>
+                                    <td class="py-3 px-3">2组</td>
+                                    <td class="py-3 px-3">市急救中心</td>
+                                    <td class="py-3 px-3">14:50 (已到达)</td>
+                                    <td class="py-3 px-3">
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-fire-resource/10 text-fire-resource">
+                                            <span class="w-2 h-2 rounded-full bg-fire-resource mr-1"></span>
+                                            已部署
+                                        </span>
+                                    </td>
+                                    <td class="py-3 px-3">
+                                        <button class="text-fire-monitor mr-2 hover:text-fire-primary transition-colors">
+                                            <i class="fa fa-map-marker"></i>
+                                        </button>
+                                        <button class="text-gray-500 hover:text-fire-primary transition-colors">
+                                            <i class="fa fa-phone"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- 资源调度地图 -->
+                    <div class="mt-6">
+                        <h4 class="font-medium mb-3">资源调度路线</h4>
+                        <div class="relative w-full h-[200px] bg-map-land rounded-lg map-grid overflow-hidden">
+                            <!-- 简化地图 -->
+                            <div class="absolute top-1/4 left-1/4 w-1/2 h-1/2 bg-map-forest rounded-lg opacity-80"></div>
+                            <div class="absolute top-1/2 left-0 w-full h-1 bg-map-road opacity-80"></div>
+                            
+                            <!-- 火情点 -->
+                            <div class="absolute top-[30%] left-[40%]">
+                                <div class="w-6 h-6 bg-fire-danger rounded-full flex items-center justify-center text-white font-bold text-xs">Ⅲ</div>
+                            </div>
+                            
+                            <!-- 资源点 -->
+                            <div class="absolute top-[50%] left-[10%]">
+                                <div class="w-5 h-5 bg-fire-resource rounded-full flex items-center justify-center text-white text-xs">
+                                    <i class="fa fa-truck"></i>
+                                </div>
+                                <div class="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-white rounded px-1 py-0.5 text-[10px] shadow-md">
+                                    消防支队
+                                </div>
+                            </div>
+                            
+                            <div class="absolute top-[50%] right-[10%]">
+                                <div class="w-5 h-5 bg-fire-resource rounded-full flex items-center justify-center text-white text-xs">
+                                    <i class="fa fa-hospital-o"></i>
+                                </div>
+                                <div class="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-white rounded px-1 py-0.5 text-[10px] shadow-md">
+                                    急救中心
+                                </div>
+                            </div>
+                            
+                            <!-- 调度路线 -->
+                            <svg class="absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M 10% 50% L 40% 30%" stroke="#10B981" stroke-width="2" stroke-dasharray="3,3" fill="none" />
+                                <path d="M 90% 50% L 40% 30%" stroke="#10B981" stroke-width="2" stroke-dasharray="3,3" fill="none" />
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 4. 联动指挥面板 -->
+        <section id="linkage" class="mb-8">
+            <h2 class="text-xl font-bold mb-6 flex items-center text-fire-primary">
+                <i class="fa fa-sitemap mr-2"></i> 多部门联动指挥
+            </h2>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- 联动单位 -->
+                <div class="bg-white rounded-lg shadow-md p-4 lg:col-span-1">
+                    <h3 class="font-bold mb-4">联动单位管理</h3>
+                    
+                    <div class="space-y-4">
+                        <!-- 消防部门 -->
+                        <div class="border border-gray-200 rounded-lg p-3 resource-card">
+                            <div class="flex justify-between items-start mb-2">
+                                <div class="flex items-center">
+                                    <i class="fa fa-fire-extinguisher text-fire-primary mr-2"></i>
+                                    <span class="font-medium">消防救援支队</span>
+                                </div>
+                                <span class="text-xs bg-fire-primary/10 text-fire-primary px-2 py-0.5 rounded">已联动</span>
+                            </div>
+                            <div class="text-sm text-gray-600 mb-2">
+                                <div class="flex justify-between mb-1">
+                                    <span>负责人：</span>
+                                    <span>张队长</span>
+                                </div>
+                                <div class="flex justify-between mb-1">
+                                    <span>联系方式：</span>
+                                    <span>138****8888</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span>响应状态：</span>
+                                    <span class="text-fire-resource">一级响应</span>
+                                </div>
+                            </div>
+                            <button class="w-full mt-2 text-sm bg-fire-primary/10 text-fire-primary rounded py-1 hover:bg-fire-primary/20 transition-colors">
+                                <i class="fa fa-phone mr-1"></i> 联系负责人
+                            </button>
+                        </div>
+                        
+                        <!-- 公安部门 -->
+                        <div class="border border-gray-200 rounded-lg p-3 resource-card">
+                            <div class="flex justify-between items-start mb-2">
+                                <div class="flex items-center">
+                                    <i class="fa fa-shield text-blue-600 mr-2"></i>
+                                    <span class="font-medium">公安交警支队</span>
+                                </div>
+                                <span class="text-xs bg-fire-primary/10 text-fire-primary px-2 py-0.5 rounded">已联动</span>
+                            </div>
+                            <div class="text-sm text-gray-600 mb-2">
+                                <div class="flex justify-between mb-1">
+                                    <span>负责人：</span>
+                                    <span>李警官</span>
+                                </div>
+                                <div class="flex justify-between mb-1">
+                                    <span>联系方式：</span>
+                                    <span>139****9999</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span>响应状态：</span>
+                                    <span class="text-fire-resource">交通管制中</span>
+                                </div>
+                            </div>
+                            <button class="w-full mt-2 text-sm bg-blue-600/10 text-blue-600 rounded py-1 hover:bg-blue-600/20 transition-colors">
+                                <i class="fa fa-phone mr-1"></i> 联系负责人
+                            </button>
+                        </div>
+                        
+                        <!-- 医疗部门 -->
+                        <div class="border border-gray-200 rounded-lg p-3 resource-card">
+                            <div class="flex justify-between items-start mb-2">
+                                <div class="flex items-center">
+                                    <i class="fa fa-hospital-o text-red-600 mr-2"></i>
+                                    <span class="font-medium">医疗急救中心</span>
+                                </div>
+                                <span class="text-xs bg-fire-primary/10 text-fire-primary px-2 py-0.5 rounded">已联动</span>
+                            </div>
+                            <div class="text-sm text-gray-600 mb-2">
+                                <div class="flex justify-between mb-1">
+                                    <span>负责人：</span>
+                                    <span>王医生</span>
+                                </div>
+                                <div class="flex justify-between mb-1">
+                                    <span>联系方式：</span>
+                                    <span>137****7777</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span>响应状态：</span>
+                                    <span class="text-fire-resource">待命状态</span>
+                                </div>
+                            </div>
+                            <button class="w-full mt-2 text-sm bg-red-600/10 text-red-600 rounded py-1 hover:bg-red-600/20 transition-colors">
+                                <i class="fa fa-phone mr-1"></i> 联系负责人
+                            </button>
+                        </div>
+                        
+                        <!-- 气象部门 -->
+                        <div class="border border-gray-200 rounded-lg p-3 resource-card">
+                            <div class="flex justify-between items-start mb-2">
+                                <div class="flex items-center">
+                                    <i class="fa fa-cloud text-purple-600 mr-2"></i>
+                                    <span class="font-medium">气象服务中心</span>
+                                </div>
+                                <span class="text-xs bg-fire-primary/10 text-fire-primary px-2 py-0.5 rounded">已联动</span>
+                            </div>
+                            <div class="text-sm text-gray-600 mb-2">
+                                <div class="flex justify-between mb-1">
+                                    <span>负责人：</span>
+                                    <span>赵气象</span>
+                                </div>
+                                <div class="flex justify-between mb-1">
+                                    <span>联系方式：</span>
+                                    <span>136****6666</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span>最新预报：</span>
+                                    <span class="text-fire-warning">无降水</span>
+                                </div>
+                            </div>
+                            <button class="w-full mt-2 text-sm bg-purple-600/10 text-purple-600 rounded py-1 hover:bg-purple-600/20 transition-colors">
+                                <i class="fa fa-phone mr-1"></i> 联系负责人
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- 添加联动单位 -->
+                    <button class="w-full mt-4 border border-dashed border-gray-300 rounded p-3 text-gray-500 hover:bg-gray-50 transition-colors flex items-center justify-center">
+                        <i class="fa fa-plus mr-2"></i> 添加联动单位
+                    </button>
+                </div>
+                
+                <!-- 指挥调度中心 -->
+                <div class="bg-white rounded-lg shadow-md p-4 lg:col-span-2">
+                    <h3 class="font-bold mb-4">联动指挥调度中心</h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                        <!-- 指挥状态 -->
+                        <div class="bg-fire-primary/5 rounded-lg p-4">
+                            <h4 class="font-medium mb-3 flex items-center">
+                                <i class="fa fa-flag text-fire-primary mr-2"></i>
+                                指挥状态
+                            </h4>
+                            <div class="space-y-3">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm">应急响应级别</span>
+                                    <span class="font-medium text-fire-danger">一级响应</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm">指挥负责人</span>
+                                    <span class="font-medium">总指挥 刘主任</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm">启动时间</span>
+                                    <span class="font-medium">14:08:30</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm">联动部门数</span>
+                                    <span class="font-medium text-fire-resource">8个</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm">已下达指令</span>
+                                    <span class="font-medium">12条</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 天气预警 -->
+                        <div class="bg-fire-monitor/5 rounded-lg p-4">
+                            <h4 class="font-medium mb-3 flex items-center">
+                                <i class="fa fa-cloud text-fire-monitor mr-2"></i>
+                                气象预警信息
+                            </h4>
+                            <div class="space-y-3">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm">当前风向</span>
+                                    <span class="font-medium text-fire-warning">西南风 4.5m/s</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm">当前温度</span>
+                                    <span class="font-medium text-fire-warning">38°C</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm">相对湿度</span>
+                                    <span class="font-medium">25%</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm">降水概率</span>
+                                    <span class="font-medium text-fire-danger">0%</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm">未来24小时预报</span>
+                                    <span class="font-medium text-fire-danger">晴，高温</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 指挥指令发布 -->
+                    <div class="border border-gray-200 rounded-lg p-4 mb-6">
+                        <h4 class="font-medium mb-3">发布指挥指令</h4>
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">指令接收单位</label>
+                                <select class="w-full border border-gray-200 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-fire-primary focus:border-transparent">
+                                    <option>所有联动单位</option>
+                                    <option>消防救援支队</option>
+                                    <option>公安交警支队</option>
+                                    <option>医疗急救中心</option>
+                                    <option>气象服务中心</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">指令类型</label>
+                                <div class="flex flex-wrap gap-2">
+                                    <button class="px-3 py-1 bg-fire-primary text-white rounded text-sm">紧急指令</button>
+                                    <button class="px-3 py-1 bg-gray-100 text-gray-700 rounded text-sm">调度指令</button>
+                                    <button class="px-3 py-1 bg-gray-100 text-gray-700 rounded text-sm">信息通报</button>
+                                    <button class="px-3 py-1 bg-gray-1
